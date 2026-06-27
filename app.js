@@ -7,7 +7,7 @@
 // CONFIGURATION
 // ==========================================
 // Ganti dengan URL Web App Google Apps Script Anda setelah deploy
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxw0dq4knjgiLlltgbDycMfzRfu_wNDlgf-mMpHZ0pVodBzTm7KNfxU5xR5yL8JX0Wn/exec';
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwWGitnYYfouZ4Y5AGLBohRdHcm3sCKyKv51oprp-xnGQundcRqBEXHPsF2wuVCIh-t/exec';
 
 // Jumlah iuran per orang (sesuaikan)
 const IURAN_PER_ORANG = 260000;
