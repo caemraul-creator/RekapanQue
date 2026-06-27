@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piknik Keluarga - Cek Data Mandiri</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            min-height: 100vh;
+            color: #2e4a2e;
+            line-height: 1.6;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+        .header {
+            text-align: center;
+            padding: 35px 20px;
+            background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+            border-radius: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(46, 125, 50, 0.3);
+            color: white;
+        }
+        .header h1 { font-size: 2.2em; margin-bottom: 8px; }
+        .header p { opacity: 0.95; font-size: 1.1em; }
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 18px;
+            border-radius: 30px;
+            margin-top: 12px;
+            font-weight: 600;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .card h2 {
+            color: #2e7d32;
+            margin-bottom: 18px;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .search-box {
+            width: 100%;
+            padding: 14px 20px;
+            border: 2px solid #c8e6c9;
+            border-radius: 12px;
+            font-size: 1em;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #2e7d32;
+        }
+        .member-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+        }
+        .member-item {
+            padding: 12px 18px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .member-item:hover, .member-item.active {
+            background: #e8f5e9;
+        }
+        .member-item:last-child { border-bottom: none; }
+        .member-name { font-weight: 600; color: #33691e; }
+        .member-family { font-size: 0.85em; color: #888; }
+        .no-result { padding: 20px; text-align: center; color: #888; }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .detail-item {
+            background: #f1f8e9;
+            padding: 14px 18px;
+            border-radius: 10px;
+            border-left: 4px solid #66bb6a;
+        }
+        .detail-item label {
+            font-size: 0.8em;
+            color: #558b2f;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .detail-item span { font-size: 1.05em; color: #33691e; font-weight: 500; }
+        .table-wrap { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        th {
+            background: #2e7d32;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tr:nth-child(even) { background: #f9f9f9; }
+        tr:hover { background: #f1f8e9; }
+        .status-h { color: #2e7d32; font-weight: 700; }
+        .status-a { color: #c62828; font-weight: 700; }
+        .status-empty { color: #bbb; }
+        .alert {
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .alert-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            color: #1565c0;
+        }
+        .alert-warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            color: #e65100;
+        }
+        .alert-danger {
+            background: #ffcdd2;
+            border-left: 4px solid #f44336;
+            color: #c62828;
+        }
+        .hidden { display: none !important; }
+        .footer {
+            text-align: center;
+            padding: 25px;
+            color: #558b2f;
+            font-size: 0.9em;
+        }
+        .tag-readonly {
+            display: inline-block;
+            background: #ffebee;
+            color: #c62828;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 700;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #558b2f;
+        }
+        .spinner {
+            border: 4px solid #c8e6c9;
+            border-top: 4px solid #2e7d32;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .schedule-table th:first-child { border-radius: 10px 0 0 0; }
+        .schedule-table th:last-child { border-radius: 0 10px 0 0; }
+        .schedule-table tr:last-child td:first-child { border-radius: 0 0 0 10px; }
+        .schedule-table tr:last-child td:last-child { border-radius: 0 0 10px 0; }
+        .copy-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .copy-box code {
+            background: #e8f5e9;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            color: #2e7d32;
+            border: 1px dashed #66bb6a;
+        }
+        .copy-btn {
+            background: #2e7d32;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: background 0.2s;
+        }
+        .copy-btn:hover { background: #1b5e20; }
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .contact-card {
+            text-align: center;
+            padding: 20px;
+            background: #f1f8e9;
+            border-radius: 12px;
+        }
+        .contact-card .avatar { font-size: 2.5em; margin-bottom: 10px; }
+        .contact-card h4 { color: #33691e; margin-bottom: 5px; }
+        .contact-card a { color: #2e7d32; text-decoration: none; font-weight: 600; }
+        @media (max-width: 600px) {
+            .header h1 { font-size: 1.6em; }
+            .card { padding: 18px; }
+            th, td { padding: 8px; font-size: 0.85em; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Piknik Keluarga</h1>
+        <p>Cek Data & Status Kehadiran Mandiri</p>
+        <div class="badge">Data langsung dari Google Sheets</div>
+    </div>
+
+    <div id="loadingPanel" class="loading">
+        <div class="spinner"></div>
+        <p>Memuat data dari server...</p>
+    </div>
+
+    <div id="errorPanel" class="alert alert-danger hidden">
+        <span>❌</span>
+        <div id="errorMessage">Gagal memuat data.</div>
+    </div>
+
+    <div id="mainPanel" class="hidden">
+        <div class="alert alert-info">
+            <span>ℹ️</span>
+            <div><strong>Cek Mandiri:</strong> Ketik nama Anda di kolom pencarian di bawah. Data bersifat <strong>read-only</strong> — hanya koordinator yang bisa mengubah data melalui Google Sheets.</div>
+        </div>
+
+        <div class="card">
+            <h2>🔍 Cari Nama Anda</h2>
+            <input type="text" class="search-box" id="searchInput" placeholder="Ketik nama Anda... (contoh: De Istiqomah, Dedi, Bella)" autocomplete="off">
+            <div class="member-list" id="memberList"></div>
+        </div>
+
+        <div id="detailPanel" class="hidden">
+            <div class="card">
+                <h2>👤 Detail Anggota <span class="tag-readonly">READ-ONLY</span></h2>
+                <div class="detail-grid" id="detailGrid"></div>
+            </div>
+
+            <div class="card">
+                <h2>📅 Status Kehadiran Harian</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr id="absensiHeader"></tr></thead>
+                        <tbody><tr id="absensiRow"></tr></tbody>
+                    </table>
+                </div>
+                <p style="margin-top:12px;font-size:0.85em;color:#666;">
+                    Keterangan: <strong class="status-h">H</strong> = Hadir | <strong class="status-a">A</strong> = Tidak Hadir | <strong class="status-empty">-</strong> = Belum Dicatat
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💰 Info Pembayaran</h2>
+            <div class="alert alert-warning">
+                <span>⚠️</span>
+                <div>
+                    <strong>Cicilan 1 (DP):</strong> paling lambat <strong id="payC1Date">[Tanggal]</strong><br>
+                    <strong>Pelunasan:</strong> wajib sebelum <strong id="payLunasDate">[Tanggal]</strong><br>
+                    Total biaya: <strong id="payTotal">Rp [Jumlah]</strong> <span id="payPerPerson">per keluarga</span>
+                </div>
+            </div>
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>Tahap</th>
+                        <th>Jumlah</th>
+                        <th>Jatuh Tempo</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Cicilan 1 (DP)</td><td id="c1Jumlah">Rp [Jumlah]</td><td id="c1JatuhTempo">[Tanggal]</td><td><span class="status-h">WAJIB</span></td></tr>
+                    <tr><td>Cicilan 2</td><td id="c2Jumlah">Rp [Jumlah]</td><td id="c2JatuhTempo">[Tanggal]</td><td><span class="status-a">OPSIONAL</span></td></tr>
+                    <tr><td>Pelunasan</td><td id="lunasJumlah">Rp [Sisa]</td><td id="lunasJatuhTempo">[Tanggal]</td><td><span class="status-h">WAJIB</span></td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top:12px;font-size:0.85em;color:#666;">
+                Status pembayaran akan diupdate oleh bendahara. Hubungi koordinator keuangan untuk konfirmasi transfer.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>🏦 Cara Pembayaran</h2>
+            <p style="margin-bottom:15px;color:#555;">Transfer ke salah satu rekening berikut, lalu konfirmasi via WhatsApp:</p>
+            <div style="background:#f9f9f9;padding:15px;border-radius:12px;margin-bottom:12px;border:1px solid #e0e0e0;">
+                <h4 style="color:#2e7d32;margin-bottom:4px;">Bank Transfer - BCA</h4>
+                <p>Atas Nama: <strong>[Nama Pemilik]</strong></p>
+                <div class="copy-box">
+                    <code id="bca">[Nomor Rekening]</code>
+                    <button class="copy-btn" onclick="copyText('bca')">Salin</button>
+                </div>
+            </div>
+            <div class="alert alert-info">
+                <span>✅</span>
+                <div><strong>Setelah Transfer:</strong> Screenshot bukti transfer dan kirim ke bendahara dengan format: <em>"Piknik - [Nama] - Cicilan [1/2/Lunas] - Rp [Jumlah]"</em></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📋 Daftar Lengkap Anggota Keluarga</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>No</th><th>Nama</th><th>Nama Keluarga</th></tr>
+                    </thead>
+                    <tbody id="fullList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Data bersumber dari Google Sheets resmi koordinator</p>
+        <p>Hanya koordinator yang dapat mengubah data</p>
+    </div>
+</div>
+
+<script>
+// =========================================================
+// GANTI INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+// Contoh: 'https://script.google.com/macros/s/AKfycb.../exec'
+// =========================================================
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyS5fyK2GygxVgT9eA_dJ1q4Spe-kpTyljfwGOnOIar-LfOTf-y7g-MR1KN6_VbDRk/exec';
+
+let membersData = [];
+let dateHeadersData = [];
+let paymentData = {};
+
+function loadAll() {
+    if (GAS_URL.indexOf('AKfycb') === -1) {
+        showError('GAS_URL belum diatur. Buka file ini di editor, cari baris "const GAS_URL", dan paste URL Web App Anda.');
+        return;
+    }
+    
+    Promise.all([
+        fetch(GAS_URL + '?action=getData').then(r => r.json()),
+        fetch(GAS_URL + '?action=getPayment').then(r => r.json())
+    ]).then(([data, payment]) => {
+        if (data.error) throw new Error(data.error);
+        if (payment.error) console.warn('Payment data error:', payment.error);
+        
+        membersData = data.members || [];
+        dateHeadersData = data.dateHeaders || [];
+        paymentData = payment || {};
+        
+        document.getElementById('loadingPanel').classList.add('hidden');
+        document.getElementById('mainPanel').classList.remove('hidden');
+        
+        renderPayment();
+        renderFullList();
+        setupSearch();
+    }).catch(err => {
+        showError('Gagal memuat data: ' + err.message + '. Pastikan GAS_URL benar dan Web App sudah di-deploy.');
+    });
+}
+
+function showError(msg) {
+    document.getElementById('loadingPanel').classList.add('hidden');
+    document.getElementById('errorPanel').classList.remove('hidden');
+    document.getElementById('errorMessage').textContent = msg;
+}
+
+function renderPayment() {
+    if (paymentData.total) document.getElementById('payTotal').textContent = paymentData.total;
+    if (paymentData.perPerson) document.getElementById('payPerPerson').textContent = paymentData.perPerson;
+    if (paymentData.cicilan1) {
+        if (paymentData.cicilan1.jatuhTempo) document.getElementById('payC1Date').textContent = paymentData.cicilan1.jatuhTempo;
+        if (paymentData.cicilan1.jumlah) document.getElementById('c1Jumlah').textContent = paymentData.cicilan1.jumlah;
+        if (paymentData.cicilan1.jatuhTempo) document.getElementById('c1JatuhTempo').textContent = paymentData.cicilan1.jatuhTempo;
+    }
+    if (paymentData.cicilan2) {
+        if (paymentData.cicilan2.jumlah) document.getElementById('c2Jumlah').textContent = paymentData.cicilan2.jumlah;
+        if (paymentData.cicilan2.jatuhTempo) document.getElementById('c2JatuhTempo').textContent = paymentData.cicilan2.jatuhTempo;
+    }
+    if (paymentData.pelunasan) {
+        if (paymentData.pelunasan.jatuhTempo) document.getElementById('payLunasDate').textContent = paymentData.pelunasan.jatuhTempo;
+        if (paymentData.pelunasan.jumlah) document.getElementById('lunasJumlah').textContent = paymentData.pelunasan.jumlah;
+        if (paymentData.pelunasan.jatuhTempo) document.getElementById('lunasJatuhTempo').textContent = paymentData.pelunasan.jatuhTempo;
+    }
+}
+
+function setupSearch() {
+    var searchInput = document.getElementById('searchInput');
+    var memberList = document.getElementById('memberList');
+    
+    searchInput.addEventListener('input', function(e) {
+        var term = e.target.value.toLowerCase().trim();
+        memberList.innerHTML = '';
+        
+        if (term === '') return;
+        
+        var filtered = membersData.filter(function(m) {
+            return m.nama.toLowerCase().includes(term) ||
+                   (m.nama_keluarga && m.nama_keluarga.toLowerCase().includes(term));
+        });
+        
+        if (filtered.length === 0) {
+            memberList.innerHTML = '<div class="no-result">Nama tidak ditemukan. Periksa ejaan Anda.</div>';
+            return;
+        }
+        
+        filtered.forEach(function(m) {
+            var div = document.createElement('div');
+            div.className = 'member-item';
+            div.innerHTML = '<span class="member-name">' + m.nama + '</span><span class="member-family">' + (m.nama_keluarga || '-') + '</span>';
+            div.onclick = function() { selectMember(m, div); };
+            memberList.appendChild(div);
+        });
+    });
+}
+
+function selectMember(m, el) {
+    document.querySelectorAll('.member-item').forEach(function(item) { item.classList.remove('active'); });
+    if (el) el.classList.add('active');
+    
+    var detailPanel = document.getElementById('detailPanel');
+    var detailGrid = document.getElementById('detailGrid');
+    var absensiHeader = document.getElementById('absensiHeader');
+    var absensiRow = document.getElementById('absensiRow');
+    
+    detailPanel.classList.remove('hidden');
+    detailGrid.innerHTML = '<div class="detail-item"><label>No. Urut</label><span>' + m.no + '</span></div>' +
+        '<div class="detail-item"><label>Nama</label><span>' + m.nama + '</span></div>' +
+        '<div class="detail-item"><label>Nama Keluarga</label><span>' + (m.nama_keluarga || '-') + '</span></div>' +
+        '<div class="detail-item"><label>Jumlah Data Absensi</label><span>' + dateHeadersData.length + ' tanggal</span></div>';
+    
+    var hHtml = '<th>Tanggal</th>';
+    var rHtml = '<td><strong>Status</strong></td>';
+    dateHeadersData.forEach(function(dh) {
+        var key = dh.month + '-' + dh.day;
+        var val = m.absensi[key] || '';
+        var display = val === 'H' ? '<span class="status-h">H</span>' :
+                      val === 'A' ? '<span class="status-a">A</span>' :
+                      '<span class="status-empty">-</span>';
+        hHtml += '<th>' + dh.day + ' ' + dh.month + '</th>';
+        rHtml += '<td>' + display + '</td>';
+    });
+    absensiHeader.innerHTML = hHtml;
+    absensiRow.innerHTML = rHtml;
+    
+    detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderFullList() {
+    var fullList = document.getElementById('fullList');
+    fullList.innerHTML = '';
+    membersData.forEach(function(m) {
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + m.no + '</td><td>' + m.nama + '</td><td>' + (m.nama_keluarga || '-') + '</td>';
+        fullList.appendChild(tr);
+    });
+}
+
+function copyText(id) {
+    var text = document.getElementById(id).textContent;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() {
+            var btn = document.querySelector('#' + id).nextElementSibling;
+            var orig = btn.textContent;
+            btn.textContent = '✓ Tersalin';
+            setTimeout(function() { btn.textContent = orig; }, 2000);
+        });
+    } else {
+        var range = document.createRange();
+        range.selectNode(document.getElementById(id));
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        document.execCommand('copy');
+        window.getSelection().removeAllRanges();
+    }
+}
+
+// Start loading
+loadAll();
+</script>
+</body>
+</html>
