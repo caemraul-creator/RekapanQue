@@ -165,7 +165,7 @@ function renderList(data) {
         const statusBg = isLunas ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.06)';
         
         return `
-            <div onclick="openDetailCard(event, '${escapeHtml(person.nama)}')" class="name-item" style="border-left-color: ${statusBorder}; background: ${statusBg};">
+            <div onclick="event.stopPropagation(); openDetailCard(event, '${escapeHtml(person.nama)}')" class="name-item" style="border-left-color: ${statusBorder}; background: ${statusBg};">
                 <span class="name-text">${escapeHtml(person.nama)}</span>
                 <span class="name-status-dot ${isLunas ? 'dot-lunas' : 'dot-belum'}"></span>
             </div>
@@ -411,12 +411,9 @@ function openDetailCard(event, nama) {
     const card = popup.querySelector('.detail-card');
     const isMobile = window.innerWidth <= 640;
 
-    // Render dulu agar bisa ukur tinggi kartu
-    popup.style.visibility = 'hidden';
     popup.classList.add('active');
 
     if (isMobile) {
-        // Mobile: bottom-sheet style
         card.classList.add('mobile-card');
         card.style.position = '';
         card.style.left = '';
@@ -424,33 +421,38 @@ function openDetailCard(event, nama) {
         card.style.width = '';
         card.style.margin = '';
         card.style.transformOrigin = '';
+        card.style.opacity = '';
     } else {
         card.classList.remove('mobile-card');
-        const row = event.currentTarget;
-        const rowRect = row.getBoundingClientRect();
+        card.style.position = 'fixed';
+        card.style.margin = '0';
+        card.style.opacity = '0';
+        card.style.width = Math.min(360, window.innerWidth - 16) + 'px';
+
+        const item = event.currentTarget;
+        const itemRect = item.getBoundingClientRect();
         const vw = window.innerWidth;
         const vh = window.innerHeight;
 
-        const cardH = card.offsetHeight;
-        const cardW = Math.min(360, vw - 16);
+        // Force layout reflow agar ukuran terhitung
+        void card.offsetHeight;
+        const cardRect = card.getBoundingClientRect();
+        const cardH = cardRect.height;
+        const cardW = cardRect.width;
 
-        card.style.position = 'fixed';
-        card.style.margin = '0';
-        card.style.width = cardW + 'px';
-
-        let left = rowRect.left;
+        let left = itemRect.left;
         if (left + cardW > vw - 8) left = vw - cardW - 8;
         if (left < 8) left = 8;
 
-        const spaceAbove = rowRect.top - 8;
-        const spaceBelow = vh - rowRect.bottom - 8;
+        const spaceAbove = itemRect.top - 8;
+        const spaceBelow = vh - itemRect.bottom - 8;
 
         let top, transformOrigin;
         if (spaceAbove >= cardH) {
-            top = rowRect.top - cardH - 6;
+            top = itemRect.top - cardH - 6;
             transformOrigin = 'bottom left';
         } else if (spaceBelow >= cardH) {
-            top = rowRect.bottom + 6;
+            top = itemRect.bottom + 6;
             transformOrigin = 'top left';
         } else {
             top = Math.max(8, vh - cardH - 8);
@@ -460,10 +462,8 @@ function openDetailCard(event, nama) {
         card.style.top = top + 'px';
         card.style.left = left + 'px';
         card.style.transformOrigin = transformOrigin;
+        card.style.opacity = '1';
     }
-
-    // Tampilkan
-    popup.style.visibility = '';
 }
 
 function closeDetailCard() {
