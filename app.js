@@ -336,6 +336,8 @@ function getSampleData() {
 // ==========================================
 // DETAIL CARD - KLIK NAMA
 // ==========================================
+let currentOpenName = null;
+
 function openDetailCard(event, nama) {
     const person = allData.find(p => p.nama === nama);
     if (!person) return;
@@ -374,7 +376,7 @@ function openDetailCard(event, nama) {
         ? `<div class="detail-footer-lunas"><i class="fas fa-check-circle"></i> Lunas! Terima kasih sudah membayar penuh.</div>`
         : `<div class="detail-footer-kurang"><i class="fas fa-exclamation-triangle"></i> Masih kurang <strong>${formatRupiah(sisa)}</strong> lagi</div>`;
 
-    document.getElementById('detailCardContent').innerHTML = `
+    const cardHTML = `
         <div class="detail-header">
             <div class="detail-avatar">${initials}</div>
             <div class="detail-info">
@@ -407,119 +409,61 @@ function openDetailCard(event, nama) {
         <div class="detail-footer">${footerHTML}</div>
     `;
 
-    const popup = document.getElementById('detailCardOverlay');
-    const card = popup.querySelector('.detail-card');
-    const isMobile = window.innerWidth <= 640;
-
-    // ── Reset ──
-    popup.classList.remove('active');
-    if (card) card.style.cssText = '';
-    card.classList.remove('mobile-card');
-
-    // ── Show overlay ──
-    popup.classList.add('active');
-    if (isMobile) card.classList.add('mobile-card');
-
-    // ── Measure viewport (lebih reliable di mobile pakai visualViewport) ──
-    const vv = window.visualViewport || { width: window.innerWidth, height: window.innerHeight };
-    const vw = vv.width;
-    const vh = vv.height;
-    const gap = 8;
-
-    // ── Lebar kartu ──
-    const cardMaxWidth = isMobile ? Math.min(400, vw - 24) : Math.min(360, vw - 16);
-
-    // Place card at origin, hidden, no transition → measure real size
-    card.style.position = 'fixed';
-    card.style.top = '0';
-    card.style.left = '0';
-    card.style.width = cardMaxWidth + 'px';
-    card.style.margin = '0';
-    card.style.maxHeight = (vh - 2 * gap) + 'px';
-    card.style.overflowY = 'auto';
-    card.style.visibility = 'hidden';
-    card.style.opacity = '0';
-    card.style.transform = 'scale(1)';
-    card.style.transition = 'none';
-
-    void card.offsetHeight;
-    let cardH = card.offsetHeight;
-    const cardW = card.offsetWidth;
-
-    // ── Calculate position ──
+    // ── INLINE EXPANSION: kartu muncul di bawah nama yang diklik ──
     const item = event.currentTarget;
-    const itemRect = item.getBoundingClientRect();
 
-    // Horizontal: center to item, clamp to viewport
-    let left = itemRect.left + (itemRect.width / 2) - (cardW / 2);
-    left = Math.max(gap, Math.min(left, vw - cardW - gap));
-
-    // Vertical: prefer above, fallback below, fallback clamped center
-    const spaceAbove = itemRect.top - gap;
-    const spaceBelow = vh - itemRect.bottom - gap;
-
-    let top, transformOrigin;
-    if (spaceAbove >= cardH + gap) {
-        // Muat di ATAS nama
-        top = itemRect.top - cardH - gap;
-        transformOrigin = 'bottom center';
-    } else if (spaceBelow >= cardH + gap) {
-        // Muat di BAWAH nama
-        top = itemRect.bottom + gap;
-        transformOrigin = 'top center';
-    } else {
-        // Tidak muat penuh di atas maupun bawah → pilih sisi yang lebih luas,
-        // lalu clamp ke viewport (kartu akan di-scroll di dalamnya berkat overflowY:auto)
-        if (spaceAbove >= spaceBelow) {
-            // Sisi atas lebih luas → tempel ke atas nama, kartu tumbuh ke atas tapi di-clamp
-            top = gap;
-            cardH = Math.min(cardH, spaceAbove - gap);
-            card.style.maxHeight = cardH + 'px';
-            transformOrigin = 'bottom center';
-        } else {
-            // Sisi bawah lebih luas → tempel ke bawah nama
-            top = itemRect.bottom + gap;
-            cardH = Math.min(cardH, spaceBelow - gap);
-            card.style.maxHeight = cardH + 'px';
-            transformOrigin = 'top center';
-        }
+    // Kalau klik nama yang sama → tutup (toggle)
+    if (currentOpenName === nama) {
+        closeDetailCard();
+        return;
     }
 
-    // ── Apply position (still hidden) ──
-    card.style.top = top + 'px';
-    card.style.left = left + 'px';
-    card.style.transformOrigin = transformOrigin;
+    // Tutup kartu lama dulu kalau ada
+    closeDetailCard();
 
-    // ── Animate in ──
+    // Tandai nama yang sedang aktif
+    currentOpenName = nama;
+    item.classList.add('name-item-active');
+
+    // Buat wrapper inline yang span full-width di grid
+    const inlineWrapper = document.createElement('div');
+    inlineWrapper.className = 'detail-inline-wrapper';
+    inlineWrapper.id = 'inlineDetailCard';
+    inlineWrapper.style.gridColumn = '1 / -1';
+
+    // Isi: kartu + tombol tutup
+    inlineWrapper.innerHTML = `
+        <div class="detail-card detail-card-inline">
+            <button class="detail-close-btn" onclick="closeDetailCard()" aria-label="Tutup">
+                <i class="fas fa-times"></i>
+            </button>
+            ${cardHTML}
+        </div>
+    `;
+
+    // Sisipkan SETELAH item nama yang diklik
+    item.parentNode.insertBefore(inlineWrapper, item.nextSibling);
+
+    // Animate in: dari 0 height → tinggi penuh
     requestAnimationFrame(() => {
-        card.style.visibility = 'visible';
-        card.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
-        card.style.transform = 'scale(0.92)';
-
-        requestAnimationFrame(() => {
-            card.style.transform = 'scale(1)';
-            card.style.opacity = '1';
-
-            // ── Safety: kalau ada address bar berubah, re-clamp ke viewport ──
-            const finalRect = card.getBoundingClientRect();
-            const margin = 8;
-            if (finalRect.top < margin) {
-                card.style.top = margin + 'px';
-            } else if (finalRect.bottom > vh - margin) {
-                card.style.top = (vh - finalRect.height - margin) + 'px';
-            }
-        });
+        inlineWrapper.classList.add('open');
+        // Scroll agar kartu terlihat
+        setTimeout(() => {
+            inlineWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 150);
     });
 }
 
 function closeDetailCard() {
-    const popup = document.getElementById('detailCardOverlay');
-    const card = popup.querySelector('.detail-card');
-    popup.classList.remove('active');
-    if (card) {
-        card.style.transition = 'none';
-        card.style.cssText = '';
+    const inlineWrapper = document.getElementById('inlineDetailCard');
+    if (inlineWrapper) {
+        inlineWrapper.classList.remove('open');
+        // Tunggu animasi selesai lalu hapus
+        setTimeout(() => inlineWrapper.remove(), 250);
     }
+    // Hapus highlight dari nama yang aktif
+    document.querySelectorAll('.name-item-active').forEach(el => el.classList.remove('name-item-active'));
+    currentOpenName = null;
 }
 
 function formatTanggalIndo(tanggal) {

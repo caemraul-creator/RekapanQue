@@ -377,19 +377,50 @@ body {
 .toast.show { transform: translateX(0); }
 .toast.error { background: linear-gradient(135deg, #ef4444, #f97316); }
 
-/* ── Detail Card ── */
-.detail-card-overlay {
-    position: fixed; inset: 0;
-    background: rgba(30,27,75,0.18);
-    z-index: 2500; opacity: 0; visibility: hidden;
-    transition: opacity 0.2s;
-    pointer-events: none;
+/* ── Detail Card (Inline Expansion) ── */
+.detail-card-overlay { display: none; } /* tidak terpakai lagi, pakai inline */
+
+/* Wrapper yang muncul inline di bawah nama */
+.detail-inline-wrapper {
+    grid-column: 1 / -1;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.25s ease, margin 0.25s ease;
+    margin-top: 0;
 }
-.detail-card-overlay.active {
-    opacity: 1; visibility: visible;
-    pointer-events: all;
+.detail-inline-wrapper.open {
+    max-height: 1200px; /* cukup untuk kartu panjang */
+    opacity: 1;
+    margin-top: 8px;
 }
 
+.detail-card-inline {
+    position: relative;
+    background: white;
+    border-radius: 18px;
+    width: 100%;
+    box-shadow: 0 8px 28px rgba(124,58,237,0.18), 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+    border: 1.5px solid #e9d5ff;
+    animation: inlineCardPop 0.25s ease;
+}
+
+@keyframes inlineCardPop {
+    from { transform: translateY(-6px) scale(0.98); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Highlight nama yang sedang aktif */
+.name-item-active {
+    border-color: var(--primary) !important;
+    background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(236,72,153,0.08)) !important;
+    box-shadow: 0 4px 14px rgba(124,58,237,0.2) !important;
+    transform: translateY(-1px);
+}
+.name-item-active .name-text { color: var(--primary); }
+
+/* Kartu lama (untuk backward-compat, tidak terpakai) */
 .detail-card {
     background: white;
     border-radius: 20px;
@@ -519,16 +550,9 @@ body {
     }
     .name-text { font-size: 0.95rem; }
 
-    /* Mobile popup: popover mengikuti nama, overlay gelap agar terlihat */
-    .detail-card-overlay {
-        background: rgba(30,27,75,0.35);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
-    }
-    .detail-card.mobile-card {
-        /* posisi diatur via JS (popover), kelas ini hanya penanda */
-        box-shadow: 0 12px 40px rgba(124,58,237,0.35), 0 4px 12px rgba(0,0,0,0.15);
-    }
+    /* Mobile: kartu inline full-width */
+    .detail-card-inline { border-radius: 14px; }
+    .detail-inline-wrapper.open { margin-top: 6px; }
 }
 
 /* ── Event Block ── */
