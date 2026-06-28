@@ -1,16 +1,15 @@
 /**
- * Rekapan Iuran Piknik Keluarga - Frontend App
- * Connects to Google Apps Script Web API
+ * Rekapan Iuran Piknik Keluarga - Frontend App v2
+ * SEMUA REQUEST PAKAI GET (CORS-safe)
  */
 
 // ==========================================
 // CONFIGURATION
 // ==========================================
-// Ganti dengan URL Web App Google Apps Script Anda setelah deploy
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwWGitnYYfouZ4Y5AGLBohRdHcm3sCKyKv51oprp-xnGQundcRqBEXHPsF2wuVCIh-t/exec';
 
-// Jumlah iuran per orang (sesuaikan)
-const IURAN_PER_ORANG = 260000;
+// Target iuran default (akan di-overwrite dari API)
+let IURAN_PER_ORANG = 260000;
 
 // ==========================================
 // STATE
@@ -55,13 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-    // Search
     elements.searchInput.addEventListener('input', debounce(filterData, 300));
-    
-    // Refresh
     elements.btnRefresh.addEventListener('click', loadData);
     
-    // Filter buttons
     elements.filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             elements.filterBtns.forEach(b => b.classList.remove('active'));
@@ -71,34 +66,37 @@ function setupEventListeners() {
         });
     });
     
-    // Modal
     elements.btnCloseModal.addEventListener('click', closeModal);
     elements.btnCancel.addEventListener('click', closeModal);
     elements.modalOverlay.addEventListener('click', (e) => {
         if (e.target === elements.modalOverlay) closeModal();
     });
     
-    // Save payment
     elements.btnSave.addEventListener('click', savePayment);
 }
 
 // ==========================================
-// DATA LOADING
+// DATA LOADING (GET - CORS SAFE)
 // ==========================================
 async function loadData() {
     showLoading(true);
     
     try {
-        // Untuk demo, gunakan data sample jika API belum di-setup
         if (GAS_API_URL.includes('xxxxxxxx')) {
             console.log('API URL masih default, menggunakan data sample...');
             await new Promise(r => setTimeout(r, 1000));
             allData = getSampleData();
         } else {
+            // GET request - tidak butuh preflight CORS
             const response = await fetch(`${GAS_API_URL}?action=getData`);
             const result = await response.json();
+            
             if (result.success) {
                 allData = result.data;
+                // Update target iuran dari server
+                if (result.targetIuran) {
+                    IURAN_PER_ORANG = result.targetIuran;
+                }
             } else {
                 throw new Error(result.message);
             }
@@ -110,7 +108,6 @@ async function loadData() {
     } catch (error) {
         console.error('Error loading data:', error);
         showToast('Gagal memuat data: ' + error.message, 'error');
-        // Fallback ke data sample
         allData = getSampleData();
         updateStats();
         filterData();
@@ -138,12 +135,10 @@ function filterData() {
     const searchTerm = elements.searchInput.value.toLowerCase().trim();
     
     let filtered = allData.filter(person => {
-        // Search filter
         const matchSearch = !searchTerm || 
             person.nama.toLowerCase().includes(searchTerm) ||
             person.keluarga.toLowerCase().includes(searchTerm);
         
-        // Status filter
         let matchStatus = true;
         if (currentFilter === 'lunas') matchStatus = person.status === 'Lunas';
         if (currentFilter === 'belum') matchStatus = person.status === 'Belum Lunas';
@@ -167,14 +162,15 @@ function renderTable(data) {
     elements.tableBody.innerHTML = data.map((person, idx) => {
         const statusClass = person.status === 'Lunas' ? 'status-lunas' : 'status-belum';
         const totalFormatted = formatRupiah(person.total || 0);
+        const targetFormatted = formatRupiah(IURAN_PER_ORANG);
+        const progress = Math.min(100, ((person.total || 0) / IURAN_PER_ORANG) * 100);
         
-        // Generate payment cells for dates (if available)
         let paymentCells = '';
         if (person.pembayaran && person.pembayaran.length > 0) {
             paymentCells = person.pembayaran.map(p => {
                 const paid = p.jumlah > 0;
                 return `<td class="payment-cell ${paid ? 'paid' : 'unpaid'}" 
-                           onclick="openPaymentModal('${person.nama}', '${person.keluarga}', '${p.tanggal}')">
+                           onclick="openPaymentModal('${escapeHtml(person.nama)}', '${escapeHtml(person.keluarga)}', '${p.tanggal}')">
                     ${paid ? `<i class="fas fa-check-circle"></i> ${formatRupiah(p.jumlah)}` : '-'}
                 </td>`;
             }).join('');
@@ -183,18 +179,34 @@ function renderTable(data) {
         return `
             <tr>
                 <td class="col-no">${person.no || idx + 1}</td>
-                <td class="col-keluarga">${person.keluarga || '-'}</td>
-                <td class="col-nama">${person.nama}</td>
+                <td class="col-keluarga">${escapeHtml(person.keluarga || '-')}</td>
+                <td class="col-nama nama-clickable" onclick="openDetailCard('${escapeHtml(person.nama)}')" title="Klik untuk lihat detail">${escapeHtml(person.nama)} <i class="fas fa-info-circle nama-info-icon"></i></td>
                 <td class="col-status"><span class="status-badge ${statusClass}">${person.status || 'Belum Lunas'}</span></td>
-                <td class="col-total">${totalFormatted}</td>
+                <td class="col-total">
+                    ${totalFormatted}
+                    <div class="progress-bar" title="Target: ${targetFormatted}">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                    <small class="progress-text">${Math.round(progress)}%</small>
+                </td>
                 <td>${paymentCells || '<em>Belum ada data</em>'}</td>
             </tr>
         `;
     }).join('');
 }
 
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // ==========================================
-// MODAL & PAYMENT
+// MODAL & PAYMENT (GET - CORS SAFE)
 // ==========================================
 let currentEditingPerson = null;
 let currentEditingDate = null;
@@ -239,27 +251,26 @@ async function savePayment() {
                 person.total = (person.total || 0) + jumlah;
                 if (!person.pembayaran) person.pembayaran = [];
                 person.pembayaran.push({ tanggal, jumlah, keterangan });
-                if (person.total >= IURAN_PER_ORANG) person.status = 'Lunas';
+                person.status = person.total >= IURAN_PER_ORANG ? 'Lunas' : 'Belum Lunas';
             }
         } else {
-            const response = await fetch(GAS_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'updatePayment',
-                    nama: currentEditingPerson,
-                    tanggal,
-                    jumlah,
-                    keterangan
-                })
+            // GET request dengan query parameter - CORS safe!
+            const params = new URLSearchParams({
+                action: 'updatePayment',
+                nama: currentEditingPerson,
+                tanggal: tanggal,
+                jumlah: jumlah.toString(),
+                keterangan: keterangan
             });
+            
+            const response = await fetch(`${GAS_API_URL}?${params.toString()}`);
             const result = await response.json();
+            
             if (!result.success) throw new Error(result.message);
         }
         
         closeModal();
-        updateStats();
-        filterData();
+        await loadData(); // Refresh data dari server
         showToast('Pembayaran berhasil disimpan!', 'success');
     } catch (error) {
         showToast('Gagal menyimpan: ' + error.message, 'error');
@@ -317,29 +328,115 @@ function animateValue(element, start, end, duration) {
 }
 
 // ==========================================
-// SAMPLE DATA (Demo Mode)
+// SAMPLE DATA (Demo Mode - Target 260.000)
 // ==========================================
 function getSampleData() {
     return [
-        { no: 1, keluarga: 'De Is', nama: 'De Istiqomah', status: 'Lunas', total: 50000, pembayaran: [{ tanggal: '2026-06-27', jumlah: 50000, keterangan: 'Lunas' }] },
-        { no: 2, keluarga: 'De Is', nama: 'Ica', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 3, keluarga: 'Dedi', nama: 'Dedi', status: 'Lunas', total: 50000, pembayaran: [{ tanggal: '2026-06-28', jumlah: 50000, keterangan: 'Transfer' }] },
-        { no: 4, keluarga: 'Dedi', nama: 'Faza', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 5, keluarga: 'Syarif', nama: 'Syarief', status: 'Lunas', total: 50000, pembayaran: [{ tanggal: '2026-06-27', jumlah: 50000, keterangan: 'Cash' }] },
+        { no: 1, keluarga: 'De Is', nama: 'De Istiqomah', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-27', jumlah: 260000, keterangan: 'Lunas cash' }] },
+        { no: 2, keluarga: 'De Is', nama: 'Ica', status: 'Belum Lunas', total: 100000, pembayaran: [{ tanggal: '2026-06-28', jumlah: 100000, keterangan: 'Cicilan 1' }] },
+        { no: 3, keluarga: 'Dedi', nama: 'Dedi', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-28', jumlah: 260000, keterangan: 'Transfer' }] },
+        { no: 4, keluarga: 'Dedi', nama: 'Faza', status: 'Belum Lunas', total: 150000, pembayaran: [{ tanggal: '2026-06-30', jumlah: 150000, keterangan: 'Cicilan' }] },
+        { no: 5, keluarga: 'Syarif', nama: 'Syarief', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-27', jumlah: 260000, keterangan: 'Cash' }] },
         { no: 6, keluarga: 'Syarif', nama: 'Adey', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 7, keluarga: 'Bella', nama: 'Maimon', status: 'Lunas', total: 50000, pembayaran: [{ tanggal: '2026-06-29', jumlah: 50000, keterangan: 'Transfer' }] },
+        { no: 7, keluarga: 'Bella', nama: 'Maimon', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-29', jumlah: 260000, keterangan: 'Transfer' }] },
         { no: 8, keluarga: 'Bella', nama: 'Bella', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 9, keluarga: 'Bella', nama: 'De Solekan', status: 'Belum Lunas', total: 0, pembayaran: [] },
+        { no: 9, keluarga: 'Bella', nama: 'De Solekan', status: 'Belum Lunas', total: 200000, pembayaran: [{ tanggal: '2026-07-01', jumlah: 200000, keterangan: 'Cicilan' }] },
         { no: 10, keluarga: 'Bella', nama: 'De Nur', status: 'Belum Lunas', total: 0, pembayaran: [] },
         { no: 11, keluarga: 'Bella', nama: 'Mujib', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 12, keluarga: 'De Arif', nama: 'De Arif', status: 'Lunas', total: 50000, pembayaran: [{ tanggal: '2026-06-30', jumlah: 50000, keterangan: 'Cash' }] },
+        { no: 12, keluarga: 'De Arif', nama: 'De Arif', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-30', jumlah: 260000, keterangan: 'Cash' }] },
         { no: 13, keluarga: 'De Arif', nama: 'De Khanif', status: 'Belum Lunas', total: 0, pembayaran: [] },
         { no: 14, keluarga: 'De Arif', nama: 'Lina', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 15, keluarga: 'Iwan', nama: 'Iwan', status: 'Lunas', total: 50000, pembayaran: [{ tanggal: '2026-07-01', jumlah: 50000, keterangan: 'Transfer' }] },
+        { no: 15, keluarga: 'Iwan', nama: 'Iwan', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-07-01', jumlah: 260000, keterangan: 'Transfer' }] },
         { no: 16, keluarga: 'Iwan', nama: 'Vira', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 17, keluarga: 'Imdad', nama: 'Imdad', status: 'Lunas', total: 50000, pembayaran: [{ tanggal: '2026-07-02', jumlah: 50000, keterangan: 'Cash' }] },
+        { no: 17, keluarga: 'Imdad', nama: 'Imdad', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-07-02', jumlah: 260000, keterangan: 'Cash' }] },
         { no: 18, keluarga: 'Imdad', nama: 'Vina', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 19, keluarga: 'De Tando', nama: 'De Tandho', status: 'Lunas', total: 50000, pembayaran: [{ tanggal: '2026-07-03', jumlah: 50000, keterangan: 'Transfer' }] },
+        { no: 19, keluarga: 'De Tando', nama: 'De Tandho', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-07-03', jumlah: 260000, keterangan: 'Transfer' }] },
         { no: 20, keluarga: 'De Tando', nama: 'De Hidayah', status: 'Belum Lunas', total: 0, pembayaran: [] },
     ];
+}
+
+// ==========================================
+// DETAIL CARD - KLIK NAMA
+// ==========================================
+function openDetailCard(nama) {
+    const person = allData.find(p => p.nama === nama);
+    if (!person) return;
+
+    const sisa = Math.max(0, IURAN_PER_ORANG - (person.total || 0));
+    const progress = Math.min(100, ((person.total || 0) / IURAN_PER_ORANG) * 100);
+    const isLunas = person.status === 'Lunas';
+
+    const initials = nama.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+    let timelineHTML = '';
+    if (person.pembayaran && person.pembayaran.length > 0) {
+        timelineHTML = person.pembayaran.map((p, i) => {
+            const isLast = i === person.pembayaran.length - 1;
+            return `
+            <div class="detail-tl-item">
+                <div class="detail-tl-connector">
+                    <div class="detail-tl-dot"></div>
+                    ${!isLast ? '<div class="detail-tl-line"></div>' : ''}
+                </div>
+                <div class="detail-tl-body ${!isLast ? 'detail-tl-border' : ''}">
+                    <div class="detail-tl-row">
+                        <span class="detail-tl-date"><i class="fas fa-calendar-day"></i> ${formatTanggalIndo(p.tanggal)}</span>
+                        <span class="detail-tl-amount">+${formatRupiah(p.jumlah)}</span>
+                    </div>
+                    ${p.keterangan ? `<span class="detail-tl-note">${escapeHtml(p.keterangan)}</span>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    } else {
+        timelineHTML = `<p class="detail-empty-pay"><i class="fas fa-clock"></i> Belum ada pembayaran</p>`;
+    }
+
+    const footerHTML = isLunas
+        ? `<div class="detail-footer-lunas"><i class="fas fa-check-circle"></i> Lunas! Terima kasih sudah membayar penuh.</div>`
+        : `<div class="detail-footer-kurang"><i class="fas fa-exclamation-triangle"></i> Masih kurang <strong>${formatRupiah(sisa)}</strong> lagi</div>`;
+
+    document.getElementById('detailCardContent').innerHTML = `
+        <div class="detail-header">
+            <div class="detail-avatar">${initials}</div>
+            <div class="detail-info">
+                <p class="detail-nama">${escapeHtml(nama)}</p>
+                <p class="detail-keluarga"><i class="fas fa-users"></i> ${escapeHtml(person.keluarga || '-')}</p>
+            </div>
+            <span class="status-badge ${isLunas ? 'status-lunas' : 'status-belum'}">${person.status || 'Belum Lunas'}</span>
+        </div>
+        <div class="detail-progress-section">
+            <div class="detail-progress-row">
+                <span>Terkumpul</span>
+                <span class="detail-progress-amount">${formatRupiah(person.total || 0)} <span class="detail-progress-target">/ ${formatRupiah(IURAN_PER_ORANG)}</span></span>
+            </div>
+            <div class="detail-progress-track">
+                <div class="detail-progress-fill ${isLunas ? 'lunas' : ''}" style="width:${progress}%"></div>
+            </div>
+            <div class="detail-progress-row">
+                <span class="detail-pct">${Math.round(progress)}%</span>
+                ${!isLunas ? `<span class="detail-sisa">Kurang ${formatRupiah(sisa)}</span>` : '<span class="detail-lunas-text"><i class="fas fa-check"></i> Lunas</span>'}
+            </div>
+        </div>
+        <div class="detail-timeline-section">
+            <p class="detail-timeline-title"><i class="fas fa-history"></i> Riwayat pembayaran</p>
+            ${timelineHTML}
+        </div>
+        <div class="detail-footer">${footerHTML}</div>
+    `;
+
+    document.getElementById('detailCardOverlay').classList.add('active');
+}
+
+function closeDetailCard() {
+    document.getElementById('detailCardOverlay').classList.remove('active');
+}
+
+function formatTanggalIndo(tanggal) {
+    if (!tanggal) return '-';
+    const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+    const parts = tanggal.split('-');
+    if (parts.length === 3) {
+        return `${parseInt(parts[2])} ${BULAN[parseInt(parts[1]) - 1]} ${parts[0]}`;
+    }
+    return tanggal;
 }
