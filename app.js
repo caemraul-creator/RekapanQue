@@ -166,11 +166,10 @@ function renderTable(data) {
         const progress = Math.min(100, ((person.total || 0) / IURAN_PER_ORANG) * 100);
         
         return `
-            <tr onclick="openDetailCard('${escapeHtml(person.nama)}')" class="row-clickable">
+            <tr onclick="openDetailCard(event, '${escapeHtml(person.nama)}')" class="row-clickable">
                 <td class="col-no">${person.no || idx + 1}</td>
                 <td class="col-nama">
                     <span class="nama-text">${escapeHtml(person.nama)}</span>
-                    <span class="keluarga-pill">${escapeHtml(person.keluarga || '')}</span>
                 </td>
                 <td class="col-status"><span class="status-badge ${statusClass}">${person.status || 'Belum Lunas'}</span></td>
                 <td class="col-total">
@@ -348,7 +347,7 @@ function getSampleData() {
 // ==========================================
 // DETAIL CARD - KLIK NAMA
 // ==========================================
-function openDetailCard(nama) {
+function openDetailCard(event, nama) {
     const person = allData.find(p => p.nama === nama);
     if (!person) return;
 
@@ -414,7 +413,39 @@ function openDetailCard(nama) {
         <div class="detail-footer">${footerHTML}</div>
     `;
 
-    document.getElementById('detailCardOverlay').classList.add('active');
+    const popup = document.getElementById('detailCardOverlay');
+    popup.classList.add('active');
+
+    // Posisikan popup di dekat baris yang diklik
+    const card = popup.querySelector('.detail-card');
+    const row = event.currentTarget;
+    const rowRect = row.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Reset dulu
+    card.style.position = 'fixed';
+    card.style.margin = '0';
+
+    // Hitung posisi: coba muncul di bawah baris, geser kiri/kanan agar tidak keluar layar
+    let top = rowRect.bottom + 8;
+    let left = rowRect.left;
+
+    // Kalau popup mau keluar dari bawah, muncul di atas baris
+    if (top + 420 > vh) {
+        top = rowRect.top - 8;
+        card.style.transform = 'translateY(-100%) scale(1)';
+    } else {
+        card.style.transform = 'translateY(0) scale(1)';
+    }
+
+    // Jangan sampai keluar dari kanan layar
+    if (left + 360 > vw) left = vw - 368;
+    if (left < 8) left = 8;
+
+    card.style.top = top + 'px';
+    card.style.left = left + 'px';
+    card.style.width = Math.min(360, vw - 16) + 'px';
 }
 
 function closeDetailCard() {
@@ -430,3 +461,8 @@ function formatTanggalIndo(tanggal) {
     }
     return tanggal;
 }
+
+// Tutup detail card dengan klik di luar / Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeDetailCard();
+});
