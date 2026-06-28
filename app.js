@@ -415,23 +415,66 @@ function openDetailCard(event, nama) {
 
     if (isMobile) {
         card.classList.add('mobile-card');
+        card.style.cssText = '';
+        // Mobile juga pakai nearby positioning seperti desktop
+        const item = event.currentTarget;
+        const itemRect = item.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        // Step 1: measurement state
         card.style.cssText = `
             position: fixed;
-            bottom: 16px;
-            left: 16px;
-            right: 16px;
-            top: auto;
-            width: auto;
+            top: 0;
+            left: 0;
+            width: ${Math.min(400, vw - 32)}px;
             margin: 0;
-            transform-origin: bottom center;
+            transform: scale(1);
+            opacity: 0;
+            transition: none;
+        `;
+
+        void card.offsetHeight;
+        const cardH = card.offsetHeight;
+        const cardW = card.offsetWidth;
+
+        // Step 2: calculate position
+        // Horizontal: center to item center, clamp to viewport
+        let left = itemRect.left + (itemRect.width / 2) - (cardW / 2);
+        if (left + cardW > vw - 8) left = vw - cardW - 8;
+        if (left < 8) left = 8;
+
+        const spaceAbove = itemRect.top - 8;
+        const spaceBelow = vh - itemRect.bottom - 8;
+
+        let top, transformOrigin;
+        if (spaceAbove >= cardH) {
+            top = itemRect.top - cardH - 6;
+            transformOrigin = 'bottom center';
+        } else if (spaceBelow >= cardH) {
+            top = itemRect.bottom + 6;
+            transformOrigin = 'top center';
+        } else {
+            top = Math.max(8, vh - cardH - 8);
+            transformOrigin = 'top center';
+        }
+
+        // Step 3: set final position with transition
+        card.style.cssText = `
+            position: fixed;
+            top: ${top}px;
+            left: ${left}px;
+            width: ${Math.min(400, vw - 32)}px;
+            margin: 0;
+            transform-origin: ${transformOrigin};
             transform: scale(0.92);
             opacity: 0;
             transition: all 0.18s ease;
         `;
-        requestAnimationFrame(() => {
-            card.style.transform = 'scale(1)';
-            card.style.opacity = '1';
-        });
+
+        void card.offsetHeight;
+        card.style.transform = 'scale(1)';
+        card.style.opacity = '1';
     } else {
         card.classList.remove('mobile-card');
 

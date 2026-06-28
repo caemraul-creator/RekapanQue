@@ -519,14 +519,18 @@ body {
     }
     .name-text { font-size: 0.95rem; }
 
-    /* Mobile popup bottom sheet */
+    /* Mobile popup: nearby item, same as desktop */
     .detail-card.mobile-card {
+        position: fixed;
         width: calc(100% - 32px);
-        left: 16px !important;
-        right: 16px !important;
-        top: auto !important;
-        bottom: 16px !important;
-        max-height: 75vh;
+        max-width: 400px;
+        max-height: 80vh;
+        margin: 0;
+        transform: scale(0.92);
+        transition: all 0.18s ease;
+    }
+    .detail-card-overlay.active .detail-card.mobile-card {
+        transform: scale(1);
     }
 }
 
