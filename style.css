@@ -245,80 +245,60 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Table ── */
-.table-container {
-    overflow-x: auto;
+/* ── Name List ── */
+.name-list-container {
+    overflow: visible;
     border-radius: 16px;
     border: 1.5px solid #ede9fe;
-}
-.table-wrapper { min-width: 480px; }
-
-.data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-
-.data-table th {
-    background: linear-gradient(135deg, #ede9fe, #fce7f3);
-    font-weight: 800;
-    color: #5b21b6;
-    text-transform: uppercase;
-    font-size: 0.72rem;
-    letter-spacing: 0.6px;
-    padding: 14px 16px;
-    border-bottom: 1.5px solid #c4b5fd;
+    background: rgba(255,255,255,0.5);
+    padding: 16px;
 }
 
-.data-table td { padding: 7px 16px; border-bottom: 1px solid #f3f4f6; }
-
-.row-clickable { cursor: pointer; transition: background 0.15s; }
-.row-clickable:hover { background: #faf5ff; }
-.row-clickable:hover .nama-text { color: var(--primary); }
-
-.data-table tbody tr:last-child td { border-bottom: none; }
-
-.col-no { width: 48px; text-align: center; color: var(--gray); font-weight: 700; font-size: 0.82rem; }
-.col-nama { min-width: 180px; }
-.col-status { width: 120px; text-align: center; }
-.col-total { width: 160px; }
-
-.nama-text { font-weight: 700; color: var(--dark); display: block; transition: color 0.15s; }
-
-.keluarga-pill { display: inline-block; font-size: 0.7rem; font-weight: 700; color: #7c3aed; background: #ede9fe; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
-
-.total-amount { font-weight: 800; color: var(--dark); display: block; font-size: 0.92rem; }
-
-.status-badge {
-    display: inline-block;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.72rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-}
-.status-lunas {
-    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-    color: #065f46;
-    box-shadow: 0 2px 6px rgba(16,185,129,0.2);
-}
-.status-belum {
-    background: linear-gradient(135deg, #fee2e2, #fecaca);
-    color: #991b1b;
-    box-shadow: 0 2px 6px rgba(239,68,68,0.15);
+.name-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
 }
 
-.progress-bar {
-    height: 5px;
-    background: #e9d5ff;
-    border-radius: 10px;
-    overflow: hidden;
-    margin-top: 5px;
+.name-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: white;
+    border: 1.5px solid #f3f4f6;
+    border-left-width: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #7c3aed, #ec4899);
-    border-radius: 10px;
-    transition: width 0.5s ease;
+
+.name-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(124,58,237,0.12);
+    border-color: #c4b5fd;
 }
-.progress-text { font-size: 0.7rem; color: var(--gray); font-weight: 600; }
+
+.name-text {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--dark);
+    transition: color 0.15s;
+}
+
+.name-item:hover .name-text { color: var(--primary); }
+
+.name-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.8);
+}
+.dot-lunas { background: var(--success); }
+.dot-belum { background: var(--danger); }
 
 /* ── Modal Update Pembayaran ── */
 .modal-overlay {
@@ -536,46 +516,16 @@ body {
     .stat-card { min-width: 76px; padding: 10px 12px; }
     .stat-value { font-size: 1.2rem; }
 
-    /* Mobile cards (table → card list) */
-    .table-wrapper { min-width: auto; }
-    .data-table thead { display: none; }
-    .data-table, .data-table tbody, .data-table tr, .data-table td {
-        display: block; width: 100%;
+    /* Name list mobile */
+    .name-list {
+        grid-template-columns: 1fr;
+        gap: 10px;
     }
-    .data-table tr {
-        margin-bottom: 14px;
-        background: white;
-        border-radius: 18px;
-        padding: 14px 16px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-        border: 1.5px solid #f3f4f6;
+    .name-item {
+        padding: 12px 16px;
+        border-radius: 12px;
     }
-    .data-table td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px dashed #e5e7eb;
-        font-size: 0.88rem;
-    }
-    .data-table td:last-child { border-bottom: none; }
-    .data-table td::before {
-        content: attr(data-label);
-        font-weight: 800;
-        color: var(--gray);
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .col-no { text-align: right; width: auto; }
-    .col-nama { min-width: auto; flex-direction: column; align-items: flex-start !important; gap: 4px; }
-    .col-nama::before { align-self: flex-start; }
-    .col-status { text-align: right; width: auto; }
-    .col-total { width: auto; flex-direction: column; align-items: flex-start !important; gap: 6px; }
-    .col-total::before { align-self: flex-start; }
-    .nama-text { font-size: 1rem; }
-    .keluarga-pill { display: inline-block; }
-    .progress-bar { width: 100%; }
+    .name-text { font-size: 0.95rem; }
 
     /* Mobile popup bottom sheet */
     .detail-card.mobile-card {

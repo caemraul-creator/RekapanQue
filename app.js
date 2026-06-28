@@ -22,7 +22,7 @@ let currentFilter = 'all';
 // ==========================================
 const elements = {
     loadingOverlay: document.getElementById('loadingOverlay'),
-    tableBody: document.getElementById('tableBody'),
+    nameList: document.getElementById('nameList'),
     searchInput: document.getElementById('searchInput'),
     btnRefresh: document.getElementById('btnRefresh'),
     filterBtns: document.querySelectorAll('.filter-btn'),
@@ -146,10 +146,10 @@ function filterData() {
         return matchSearch && matchStatus;
     });
     
-    renderTable(filtered);
+    renderList(filtered);
 }
 
-function renderTable(data) {
+function renderList(data) {
     if (data.length === 0) {
         elements.tableContainer.style.display = 'none';
         elements.emptyState.style.display = 'block';
@@ -159,28 +159,16 @@ function renderTable(data) {
     elements.tableContainer.style.display = 'block';
     elements.emptyState.style.display = 'none';
     
-    elements.tableBody.innerHTML = data.map((person, idx) => {
-        const statusClass = person.status === 'Lunas' ? 'status-lunas' : 'status-belum';
-        const totalFormatted = formatRupiah(person.total || 0);
-        const targetFormatted = formatRupiah(IURAN_PER_ORANG);
-        const progress = Math.min(100, ((person.total || 0) / IURAN_PER_ORANG) * 100);
+    elements.nameList.innerHTML = data.map((person, idx) => {
+        const isLunas = person.status === 'Lunas';
+        const statusBorder = isLunas ? 'var(--success)' : 'var(--danger)';
+        const statusBg = isLunas ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.06)';
         
         return `
-            <tr onclick="openDetailCard(event, '${escapeHtml(person.nama)}')" class="row-clickable">
-                <td class="col-no" data-label="No">${person.no || idx + 1}</td>
-                <td class="col-nama" data-label="Nama">
-                    <span class="nama-text">${escapeHtml(person.nama)}</span>
-                    <span class="keluarga-pill">${escapeHtml(person.keluarga || '-')}</span>
-                </td>
-                <td class="col-status" data-label="Status"><span class="status-badge ${statusClass}">${person.status || 'Belum Lunas'}</span></td>
-                <td class="col-total" data-label="Total">
-                    <span class="total-amount">${totalFormatted}</span>
-                    <div class="progress-bar" title="Target: ${targetFormatted}">
-                        <div class="progress-fill" style="width: ${progress}%"></div>
-                    </div>
-                    <small class="progress-text">${Math.round(progress)}%</small>
-                </td>
-            </tr>
+            <div onclick="openDetailCard(event, '${escapeHtml(person.nama)}')" class="name-item" style="border-left-color: ${statusBorder}; background: ${statusBg};">
+                <span class="name-text">${escapeHtml(person.nama)}</span>
+                <span class="name-status-dot ${isLunas ? 'dot-lunas' : 'dot-belum'}"></span>
+            </div>
         `;
     }).join('');
 }
