@@ -411,140 +411,84 @@ function openDetailCard(event, nama) {
     const card = popup.querySelector('.detail-card');
     const isMobile = window.innerWidth <= 640;
 
+    // ── Reset & show overlay ──
+    popup.classList.remove('active');
+    if (card) card.style.cssText = '';
     popup.classList.add('active');
+    if (isMobile) card.classList.add('mobile-card');
+    else card.classList.remove('mobile-card');
 
-    if (isMobile) {
-        card.classList.add('mobile-card');
-        card.style.cssText = '';
-        // Mobile juga pakai nearby positioning seperti desktop
-        const item = event.currentTarget;
-        const itemRect = item.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
+    // ── Measurement phase ──
+    const vw = window.innerWidth;
+    const cardMaxWidth = isMobile ? Math.min(400, vw - 32) : Math.min(360, vw - 16);
 
-        // Step 1: measurement state
-        card.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: ${Math.min(400, vw - 32)}px;
-            margin: 0;
-            transform: scale(1);
-            opacity: 0;
-            transition: none;
-        `;
+    // Place card at origin, hidden, no transition → measure real size
+    card.style.position = 'fixed';
+    card.style.top = '0';
+    card.style.left = '0';
+    card.style.width = cardMaxWidth + 'px';
+    card.style.margin = '0';
+    card.style.visibility = 'hidden';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(1)';
+    card.style.transition = 'none';
 
-        void card.offsetHeight;
-        const cardH = card.offsetHeight;
-        const cardW = card.offsetWidth;
+    void card.offsetHeight;
+    const cardH = card.offsetHeight;
+    const cardW = card.offsetWidth;
 
-        // Step 2: calculate position
-        // Horizontal: center to item center, clamp to viewport
-        let left = itemRect.left + (itemRect.width / 2) - (cardW / 2);
-        if (left + cardW > vw - 8) left = vw - cardW - 8;
-        if (left < 8) left = 8;
+    // ── Calculate position ──
+    const item = event.currentTarget;
+    const itemRect = item.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const gap = 8;
 
-        const spaceAbove = itemRect.top - 8;
-        const spaceBelow = vh - itemRect.bottom - 8;
+    // Horizontal: center to item, clamp to viewport
+    let left = itemRect.left + (itemRect.width / 2) - (cardW / 2);
+    left = Math.max(gap, Math.min(left, vw - cardW - gap));
 
-        let top, transformOrigin;
-        if (spaceAbove >= cardH) {
-            top = itemRect.top - cardH - 6;
-            transformOrigin = 'bottom center';
-        } else if (spaceBelow >= cardH) {
-            top = itemRect.bottom + 6;
-            transformOrigin = 'top center';
-        } else {
-            top = Math.max(8, vh - cardH - 8);
-            transformOrigin = 'top center';
-        }
+    // Vertical: prefer above, fallback below, fallback center
+    const spaceAbove = itemRect.top - gap;
+    const spaceBelow = vh - itemRect.bottom - gap;
 
-        // Step 3: set final position with transition
-        card.style.cssText = `
-            position: fixed;
-            top: ${top}px;
-            left: ${left}px;
-            width: ${Math.min(400, vw - 32)}px;
-            margin: 0;
-            transform-origin: ${transformOrigin};
-            transform: scale(0.92);
-            opacity: 0;
-            transition: all 0.18s ease;
-        `;
-
-        void card.offsetHeight;
-        card.style.transform = 'scale(1)';
-        card.style.opacity = '1';
+    let top, transformOrigin;
+    if (spaceAbove >= cardH + gap) {
+        top = itemRect.top - cardH - gap;
+        transformOrigin = 'bottom center';
+    } else if (spaceBelow >= cardH + gap) {
+        top = itemRect.bottom + gap;
+        transformOrigin = 'top center';
     } else {
-        card.classList.remove('mobile-card');
-
-        const item = event.currentTarget;
-        const itemRect = item.getBoundingClientRect();
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-
-        // Step 1: measurement state (no transition, invisible, scale 1)
-        card.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: ${Math.min(360, vw - 16)}px;
-            margin: 0;
-            transform: scale(1);
-            opacity: 0;
-            transition: none;
-        `;
-
-        // Step 2: force reflow and measure
-        void card.offsetHeight;
-        const cardH = card.offsetHeight;
-        const cardW = card.offsetWidth;
-
-        // Step 3: calculate position
-        let left = itemRect.left;
-        if (left + cardW > vw - 8) left = vw - cardW - 8;
-        if (left < 8) left = 8;
-
-        const spaceAbove = itemRect.top - 8;
-        const spaceBelow = vh - itemRect.bottom - 8;
-
-        let top, transformOrigin;
-        if (spaceAbove >= cardH) {
-            top = itemRect.top - cardH - 6;
-            transformOrigin = 'bottom left';
-        } else if (spaceBelow >= cardH) {
-            top = itemRect.bottom + 6;
-            transformOrigin = 'top left';
-        } else {
-            top = Math.max(8, vh - cardH - 8);
-            transformOrigin = 'top left';
-        }
-
-        // Step 4: set final position with transition
-        card.style.cssText = `
-            position: fixed;
-            top: ${top}px;
-            left: ${left}px;
-            width: ${Math.min(360, vw - 16)}px;
-            margin: 0;
-            transform-origin: ${transformOrigin};
-            transform: scale(0.92);
-            opacity: 0;
-            transition: all 0.18s ease;
-        `;
-
-        // Step 5: force reflow then animate in
-        void card.offsetHeight;
-        card.style.transform = 'scale(1)';
-        card.style.opacity = '1';
+        top = Math.max(gap, Math.min((vh - cardH) / 2, vh - cardH - gap));
+        transformOrigin = 'center center';
     }
+
+    // ── Apply position (still hidden) ──
+    card.style.top = top + 'px';
+    card.style.left = left + 'px';
+    card.style.transformOrigin = transformOrigin;
+
+    // ── Animate in ──
+    requestAnimationFrame(() => {
+        card.style.visibility = 'visible';
+        card.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+        card.style.transform = 'scale(0.92)';
+
+        requestAnimationFrame(() => {
+            card.style.transform = 'scale(1)';
+            card.style.opacity = '1';
+        });
+    });
 }
 
 function closeDetailCard() {
     const popup = document.getElementById('detailCardOverlay');
     const card = popup.querySelector('.detail-card');
     popup.classList.remove('active');
-    if (card) card.style.cssText = '';
+    if (card) {
+        card.style.transition = 'none';
+        card.style.cssText = '';
+    }
 }
 
 function formatTanggalIndo(tanggal) {
