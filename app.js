@@ -340,6 +340,10 @@ function openDetailCard(event, nama) {
     const person = allData.find(p => p.nama === nama);
     if (!person) return;
 
+    // ── Capture item rect IMMEDIATELY before any async work ──
+    const item = event.currentTarget;
+    const itemRect = item ? item.getBoundingClientRect() : null;
+
     const sisa = Math.max(0, IURAN_PER_ORANG - (person.total || 0));
     const progress = Math.min(100, ((person.total || 0) / IURAN_PER_ORANG) * 100);
     const isLunas = person.status === 'Lunas';
@@ -411,83 +415,94 @@ function openDetailCard(event, nama) {
     const card = popup.querySelector('.detail-card');
     const isMobile = window.innerWidth <= 640;
 
-    // ── Reset & show overlay ──
+    // ── Reset ──
     popup.classList.remove('active');
-    if (card) card.style.cssText = '';
-    popup.classList.add('active');
-    if (isMobile) card.classList.add('mobile-card');
-    else card.classList.remove('mobile-card');
+    card.style.cssText = '';
+    card.classList.remove('mobile-card', 'bottom-sheet');
 
-    // ── Measurement phase ──
-    const vw = window.innerWidth;
-    const cardMaxWidth = isMobile ? Math.min(400, vw - 32) : Math.min(360, vw - 16);
-
-    // Place card at origin, hidden, no transition → measure real size
-    card.style.position = 'fixed';
-    card.style.top = '0';
-    card.style.left = '0';
-    card.style.width = cardMaxWidth + 'px';
-    card.style.margin = '0';
-    card.style.visibility = 'hidden';
-    card.style.opacity = '0';
-    card.style.transform = 'scale(1)';
-    card.style.transition = 'none';
-
-    void card.offsetHeight;
-    const cardH = card.offsetHeight;
-    const cardW = card.offsetWidth;
-
-    // ── Calculate position ──
-    const item = event.currentTarget;
-    const itemRect = item.getBoundingClientRect();
-    const vh = window.innerHeight;
-    const gap = 8;
-
-    // Horizontal: center to item, clamp to viewport
-    let left = itemRect.left + (itemRect.width / 2) - (cardW / 2);
-    left = Math.max(gap, Math.min(left, vw - cardW - gap));
-
-    // Vertical: prefer above, fallback below, fallback center
-    const spaceAbove = itemRect.top - gap;
-    const spaceBelow = vh - itemRect.bottom - gap;
-
-    let top, transformOrigin;
-    if (spaceAbove >= cardH + gap) {
-        top = itemRect.top - cardH - gap;
-        transformOrigin = 'bottom center';
-    } else if (spaceBelow >= cardH + gap) {
-        top = itemRect.bottom + gap;
-        transformOrigin = 'top center';
-    } else {
-        top = Math.max(gap, Math.min((vh - cardH) / 2, vh - cardH - gap));
-        transformOrigin = 'center center';
-    }
-
-    // ── Apply position (still hidden) ──
-    card.style.top = top + 'px';
-    card.style.left = left + 'px';
-    card.style.transformOrigin = transformOrigin;
-
-    // ── Animate in ──
-    requestAnimationFrame(() => {
-        card.style.visibility = 'visible';
-        card.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
-        card.style.transform = 'scale(0.92)';
+    if (isMobile) {
+        // ── MOBILE: Bottom sheet (slide up from bottom) ──
+        card.classList.add('bottom-sheet');
+        popup.classList.add('active');
 
         requestAnimationFrame(() => {
-            card.style.transform = 'scale(1)';
-            card.style.opacity = '1';
+            card.classList.add('bottom-sheet-open');
         });
-    });
+    } else {
+        // ── DESKTOP: Popup anchored to item ──
+        popup.classList.add('active');
+
+        const vw = window.innerWidth;
+        const cardMaxWidth = Math.min(360, vw - 16);
+
+        card.style.position = 'fixed';
+        card.style.top = '0';
+        card.style.left = '0';
+        card.style.width = cardMaxWidth + 'px';
+        card.style.margin = '0';
+        card.style.visibility = 'hidden';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(1)';
+        card.style.transition = 'none';
+
+        void card.offsetHeight;
+        const cardH = card.offsetHeight;
+        const cardW = card.offsetWidth;
+
+        const vh = window.innerHeight;
+        const gap = 8;
+
+        let left = (itemRect ? itemRect.left + itemRect.width / 2 : vw / 2) - cardW / 2;
+        left = Math.max(gap, Math.min(left, vw - cardW - gap));
+
+        const spaceAbove = itemRect ? itemRect.top - gap : 0;
+        const spaceBelow = itemRect ? vh - itemRect.bottom - gap : vh;
+
+        let top, transformOrigin;
+        if (itemRect && spaceAbove >= cardH + gap) {
+            top = itemRect.top - cardH - gap;
+            transformOrigin = 'bottom center';
+        } else if (itemRect && spaceBelow >= cardH + gap) {
+            top = itemRect.bottom + gap;
+            transformOrigin = 'top center';
+        } else {
+            top = Math.max(gap, Math.min((vh - cardH) / 2, vh - cardH - gap));
+            transformOrigin = 'center center';
+        }
+
+        card.style.top = top + 'px';
+        card.style.left = left + 'px';
+        card.style.transformOrigin = transformOrigin;
+
+        requestAnimationFrame(() => {
+            card.style.visibility = 'visible';
+            card.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+            card.style.transform = 'scale(0.92)';
+            requestAnimationFrame(() => {
+                card.style.transform = 'scale(1)';
+                card.style.opacity = '1';
+            });
+        });
+    }
 }
 
 function closeDetailCard() {
     const popup = document.getElementById('detailCardOverlay');
     const card = popup.querySelector('.detail-card');
-    popup.classList.remove('active');
-    if (card) {
-        card.style.transition = 'none';
-        card.style.cssText = '';
+
+    if (card && card.classList.contains('bottom-sheet')) {
+        card.classList.remove('bottom-sheet-open');
+        setTimeout(() => {
+            popup.classList.remove('active');
+            card.classList.remove('bottom-sheet', 'mobile-card');
+            card.style.cssText = '';
+        }, 280);
+    } else {
+        popup.classList.remove('active');
+        if (card) {
+            card.style.transition = 'none';
+            card.style.cssText = '';
+        }
     }
 }
 
