@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekapan Iuran Piknik Keluarga</title>
+    <title>🦒 Piknik Keluarga - Gembira Loka Jogja</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -14,26 +14,26 @@
         <header class="header">
             <div class="header-content">
                 <div class="logo">
-                    <i class="fas fa-mountain-sun"></i>
+                    <div class="logo-icon">🏕️</div>
                     <div class="logo-text">
-                        <h1>Piknik Keluarga</h1>
-                        <p>Rekapan Iuran & Pembayaran</p>
+                        <h1>Piknik Keluarga 🦒</h1>
+                        <p>Kebun Binatang Gembira Loka, Jogja</p>
                     </div>
                 </div>
                 <div class="header-stats">
-                    <div class="stat-card">
+                    <div class="stat-card s-peserta">
                         <span class="stat-value" id="totalPeserta">0</span>
                         <span class="stat-label">Peserta</span>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card s-lunas">
                         <span class="stat-value" id="totalLunas">0</span>
                         <span class="stat-label">Lunas</span>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card s-belum">
                         <span class="stat-value" id="totalBelum">0</span>
                         <span class="stat-label">Belum Lunas</span>
                     </div>
-                    <div class="stat-card highlight">
+                    <div class="stat-card s-total">
                         <span class="stat-value" id="totalIuran">Rp 0</span>
                         <span class="stat-label">Total Terkumpul</span>
                     </div>
@@ -41,12 +41,79 @@
             </div>
         </header>
 
+
+        <!-- Countdown & Info Block -->
+        <div class="event-block">
+            <!-- Countdown -->
+            <div class="countdown-card">
+                <div class="countdown-label"><i class="fas fa-rocket"></i> Hitung Mundur Keberangkatan</div>
+                <div class="countdown-grid" id="countdownGrid">
+                    <div class="cd-item"><span class="cd-val" id="cdDays">00</span><span class="cd-lbl">Hari</span></div>
+                    <div class="cd-sep">:</div>
+                    <div class="cd-item"><span class="cd-val" id="cdHours">00</span><span class="cd-lbl">Jam</span></div>
+                    <div class="cd-sep">:</div>
+                    <div class="cd-item"><span class="cd-val" id="cdMins">00</span><span class="cd-lbl">Menit</span></div>
+                    <div class="cd-sep">:</div>
+                    <div class="cd-item"><span class="cd-val" id="cdSecs">00</span><span class="cd-lbl">Detik</span></div>
+                </div>
+                <div class="cd-dest"><i class="fas fa-map-marker-alt"></i> Kebun Binatang Gembira Loka, Yogyakarta</div>
+            </div>
+
+            <!-- Info Row -->
+            <div class="info-cards-row">
+
+                <!-- Cara Bayar -->
+                <div class="info-card ic-bayar">
+                    <div class="ic-header"><i class="fas fa-wallet"></i> Cara Pembayaran</div>
+                    <div class="ic-body">
+                        <div class="pay-option">
+                            <span class="pay-icon">🏠</span>
+                            <div>
+                                <p class="pay-title">Cash ke rumah</p>
+                                <p class="pay-sub">Serahkan langsung ke <strong>Rumah Lala</strong></p>
+                            </div>
+                        </div>
+                        <div class="pay-divider">atau</div>
+                        <div class="pay-option">
+                            <span class="pay-icon">🏦</span>
+                            <div>
+                                <p class="pay-title">Transfer BRI</p>
+                                <p class="pay-rekening">224001006645539</p>
+                                <p class="pay-sub">a.n. <strong>Aula Rikazah</strong></p>
+                            </div>
+                        </div>
+                        <div class="pay-wa">
+                            <i class="fab fa-whatsapp"></i>
+                            Kirim bukti TF ke
+                            <a href="https://wa.me/62895325941133" target="_blank" class="wa-link">0895325941133</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tips -->
+                <div class="info-card ic-tips">
+                    <div class="ic-header"><i class="fas fa-lightbulb"></i> Tips Persiapan</div>
+                    <div class="ic-body">
+                        <div class="tip-item"><span class="tip-icon">👟</span><span>Pakai sepatu yang nyaman, banyak jalan kaki</span></div>
+                        <div class="tip-item"><span class="tip-icon">🧴</span><span>Bawa sunscreen & topi, area outdoor terik</span></div>
+                        <div class="tip-item"><span class="tip-icon">💧</span><span>Bawa minum sendiri, hemat & tetap segar</span></div>
+                        <div class="tip-item"><span class="tip-icon">📷</span><span>Charge HP & kamera penuh malam sebelumnya</span></div>
+                        <div class="tip-item"><span class="tip-icon">🎒</span><span>Bawa tas kecil + jas hujan tipis antisipasi hujan</span></div>
+                        <div class="tip-item"><span class="tip-icon">🍱</span><span>Boleh bawa bekal sendiri, ada area piknik di dalam</span></div>
+                        <div class="tip-item"><span class="tip-icon">🧒</span><span>Anak-anak pegang orang tua, jangan sampai hilang!</span></div>
+                        <div class="tip-item"><span class="tip-icon">💊</span><span>Siapkan obat pribadi & plester di tas</span></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         <!-- Main Content -->
         <main class="main">
             <!-- Alert / Info -->
             <div class="info-bar">
                 <i class="fas fa-info-circle"></i>
-                <span>Data diambil dari Google Sheets secara real-time. Klik pada sel tanggal untuk mengubah status pembayaran.</span>
+                <span>Data real-time dari Google Sheets. Klik nama untuk melihat rincian pembayaran.</span>
             </div>
 
             <!-- Controls -->
@@ -78,11 +145,9 @@
                         <thead>
                             <tr>
                                 <th class="col-no">No</th>
-                                <th class="col-keluarga">Keluarga</th>
                                 <th class="col-nama">Nama</th>
                                 <th class="col-status">Status</th>
                                 <th class="col-total">Total</th>
-                                <th class="col-tanggal-header">Detail Tanggal</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
@@ -147,7 +212,7 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p> Rekapan Iuran Piknik Keluarga | Dibuat dengan <i class="fas fa-heart"></i></p>
+            <p>🦒 Piknik Keluarga · Gembira Loka, Jogja · Dibuat dengan <i class="fas fa-heart"></i></p>
         </footer>
     </div>
 
@@ -158,5 +223,40 @@
     </div>
 
     <script src="app.js"></script>
+    <script>
+// ==========================================
+// COUNTDOWN - Gembira Loka Jogja
+// ==========================================
+(function() {
+    // Tanggal acara: ganti sesuai tanggal pasti keberangkatan
+    const TARGET_DATE = new Date('2026-08-15T07:00:00');
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function updateCountdown() {
+        const now = new Date();
+        const diff = TARGET_DATE - now;
+
+        if (diff <= 0) {
+            document.getElementById('countdownGrid').innerHTML =
+                '<div class="cd-done">🎉 Waktunya Piknik! Selamat Jalan! 🦒</div>';
+            return;
+        }
+
+        const days  = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins  = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs  = Math.floor((diff % (1000 * 60)) / 1000);
+
+        document.getElementById('cdDays').textContent  = pad(days);
+        document.getElementById('cdHours').textContent = pad(hours);
+        document.getElementById('cdMins').textContent  = pad(mins);
+        document.getElementById('cdSecs').textContent  = pad(secs);
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+})();
+</script>
 </body>
 </html>

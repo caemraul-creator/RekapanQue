@@ -165,31 +165,21 @@ function renderTable(data) {
         const targetFormatted = formatRupiah(IURAN_PER_ORANG);
         const progress = Math.min(100, ((person.total || 0) / IURAN_PER_ORANG) * 100);
         
-        let paymentCells = '';
-        if (person.pembayaran && person.pembayaran.length > 0) {
-            paymentCells = person.pembayaran.map(p => {
-                const paid = p.jumlah > 0;
-                return `<td class="payment-cell ${paid ? 'paid' : 'unpaid'}" 
-                           onclick="openPaymentModal('${escapeHtml(person.nama)}', '${escapeHtml(person.keluarga)}', '${p.tanggal}')">
-                    ${paid ? `<i class="fas fa-check-circle"></i> ${formatRupiah(p.jumlah)}` : '-'}
-                </td>`;
-            }).join('');
-        }
-        
         return `
-            <tr>
+            <tr onclick="openDetailCard('${escapeHtml(person.nama)}')" class="row-clickable">
                 <td class="col-no">${person.no || idx + 1}</td>
-                <td class="col-keluarga">${escapeHtml(person.keluarga || '-')}</td>
-                <td class="col-nama nama-clickable" onclick="openDetailCard('${escapeHtml(person.nama)}')" title="Klik untuk lihat detail">${escapeHtml(person.nama)} <i class="fas fa-info-circle nama-info-icon"></i></td>
+                <td class="col-nama">
+                    <span class="nama-text">${escapeHtml(person.nama)}</span>
+                    <span class="keluarga-pill">${escapeHtml(person.keluarga || '')}</span>
+                </td>
                 <td class="col-status"><span class="status-badge ${statusClass}">${person.status || 'Belum Lunas'}</span></td>
                 <td class="col-total">
-                    ${totalFormatted}
+                    <span class="total-amount">${totalFormatted}</span>
                     <div class="progress-bar" title="Target: ${targetFormatted}">
                         <div class="progress-fill" style="width: ${progress}%"></div>
                     </div>
                     <small class="progress-text">${Math.round(progress)}%</small>
                 </td>
-                <td>${paymentCells || '<em>Belum ada data</em>'}</td>
             </tr>
         `;
     }).join('');
