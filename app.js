@@ -167,12 +167,13 @@ function renderTable(data) {
         
         return `
             <tr onclick="openDetailCard(event, '${escapeHtml(person.nama)}')" class="row-clickable">
-                <td class="col-no">${person.no || idx + 1}</td>
-                <td class="col-nama">
+                <td class="col-no" data-label="No">${person.no || idx + 1}</td>
+                <td class="col-nama" data-label="Nama">
                     <span class="nama-text">${escapeHtml(person.nama)}</span>
+                    <span class="keluarga-pill">${escapeHtml(person.keluarga || '-')}</span>
                 </td>
-                <td class="col-status"><span class="status-badge ${statusClass}">${person.status || 'Belum Lunas'}</span></td>
-                <td class="col-total">
+                <td class="col-status" data-label="Status"><span class="status-badge ${statusClass}">${person.status || 'Belum Lunas'}</span></td>
+                <td class="col-total" data-label="Total">
                     <span class="total-amount">${totalFormatted}</span>
                     <div class="progress-bar" title="Target: ${targetFormatted}">
                         <div class="progress-fill" style="width: ${progress}%"></div>
@@ -354,6 +355,7 @@ function openDetailCard(event, nama) {
     const sisa = Math.max(0, IURAN_PER_ORANG - (person.total || 0));
     const progress = Math.min(100, ((person.total || 0) / IURAN_PER_ORANG) * 100);
     const isLunas = person.status === 'Lunas';
+    const cicilanCount = person.pembayaran ? person.pembayaran.length : 0;
 
     const initials = nama.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
@@ -390,6 +392,10 @@ function openDetailCard(event, nama) {
             <div class="detail-info">
                 <p class="detail-nama">${escapeHtml(nama)}</p>
                 <p class="detail-keluarga"><i class="fas fa-users"></i> ${escapeHtml(person.keluarga || '-')}</p>
+                <div class="detail-meta-row">
+                    <span class="detail-meta"><i class="fas fa-hashtag"></i> No. ${person.no || '-'}</span>
+                    <span class="detail-meta"><i class="fas fa-receipt"></i> ${cicilanCount} kali cicilan</span>
+                </div>
             </div>
             <span class="status-badge ${isLunas ? 'status-lunas' : 'status-belum'}">${person.status || 'Belum Lunas'}</span>
         </div>
@@ -414,54 +420,59 @@ function openDetailCard(event, nama) {
     `;
 
     const popup = document.getElementById('detailCardOverlay');
+    const card = popup.querySelector('.detail-card');
+    const isMobile = window.innerWidth <= 640;
 
     // Render dulu agar bisa ukur tinggi kartu
     popup.style.visibility = 'hidden';
     popup.classList.add('active');
 
-    const card = popup.querySelector('.detail-card');
-    const row = event.currentTarget;
-    const rowRect = row.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    // Ukur tinggi kartu setelah render
-    const cardH = card.offsetHeight;
-    const cardW = Math.min(360, vw - 16);
-
-    card.style.position = 'fixed';
-    card.style.margin = '0';
-    card.style.width = cardW + 'px';
-
-    // Posisi horizontal: rata kiri dengan baris, jangan keluar kanan/kiri
-    let left = rowRect.left;
-    if (left + cardW > vw - 8) left = vw - cardW - 8;
-    if (left < 8) left = 8;
-
-    // Posisi vertikal:
-    // Prioritas: muncul di ATAS baris (lebih natural saat scroll ke bawah)
-    // Fallback: di bawah, jika tidak cukup ruang di atas
-    const spaceAbove = rowRect.top - 8;
-    const spaceBelow = vh - rowRect.bottom - 8;
-
-    let top, transformOrigin;
-    if (spaceAbove >= cardH) {
-        // Cukup ruang di atas → muncul di atas
-        top = rowRect.top - cardH - 6;
-        transformOrigin = 'bottom left';
-    } else if (spaceBelow >= cardH) {
-        // Cukup ruang di bawah → muncul di bawah
-        top = rowRect.bottom + 6;
-        transformOrigin = 'top left';
+    if (isMobile) {
+        // Mobile: bottom-sheet style
+        card.classList.add('mobile-card');
+        card.style.position = '';
+        card.style.left = '';
+        card.style.top = '';
+        card.style.width = '';
+        card.style.margin = '';
+        card.style.transformOrigin = '';
     } else {
-        // Tidak cukup dua-duanya → sesuaikan agar tidak keluar layar
-        top = Math.max(8, vh - cardH - 8);
-        transformOrigin = 'top left';
-    }
+        card.classList.remove('mobile-card');
+        const row = event.currentTarget;
+        const rowRect = row.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
 
-    card.style.top = top + 'px';
-    card.style.left = left + 'px';
-    card.style.transformOrigin = transformOrigin;
+        const cardH = card.offsetHeight;
+        const cardW = Math.min(360, vw - 16);
+
+        card.style.position = 'fixed';
+        card.style.margin = '0';
+        card.style.width = cardW + 'px';
+
+        let left = rowRect.left;
+        if (left + cardW > vw - 8) left = vw - cardW - 8;
+        if (left < 8) left = 8;
+
+        const spaceAbove = rowRect.top - 8;
+        const spaceBelow = vh - rowRect.bottom - 8;
+
+        let top, transformOrigin;
+        if (spaceAbove >= cardH) {
+            top = rowRect.top - cardH - 6;
+            transformOrigin = 'bottom left';
+        } else if (spaceBelow >= cardH) {
+            top = rowRect.bottom + 6;
+            transformOrigin = 'top left';
+        } else {
+            top = Math.max(8, vh - cardH - 8);
+            transformOrigin = 'top left';
+        }
+
+        card.style.top = top + 'px';
+        card.style.left = left + 'px';
+        card.style.transformOrigin = transformOrigin;
+    }
 
     // Tampilkan
     popup.style.visibility = '';

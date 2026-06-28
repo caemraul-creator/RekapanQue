@@ -281,7 +281,7 @@ body {
 
 .nama-text { font-weight: 700; color: var(--dark); display: block; transition: color 0.15s; }
 
-.keluarga-pill { display: none; }
+.keluarga-pill { display: inline-block; font-size: 0.7rem; font-weight: 700; color: #7c3aed; background: #ede9fe; padding: 2px 8px; border-radius: 10px; margin-top: 4px; }
 
 .total-amount { font-weight: 800; color: var(--dark); display: block; font-size: 0.92rem; }
 
@@ -459,6 +459,10 @@ body {
 .detail-keluarga { font-size: 0.78rem; color: #7c3aed; font-weight: 600; margin: 0; }
 .detail-keluarga i { font-size: 0.72rem; margin-right: 3px; }
 
+.detail-meta-row { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.detail-meta { font-size: 0.7rem; font-weight: 700; color: var(--gray); background: #f3f4f6; padding: 2px 8px; border-radius: 8px; }
+.detail-meta i { margin-right: 3px; color: var(--primary-light); }
+
 .detail-progress-section { padding: 16px 20px; border-bottom: 1px solid #f3f4f6; }
 .detail-progress-row {
     display: flex; justify-content: space-between; align-items: center;
@@ -529,9 +533,63 @@ body {
     .search-box { min-width: auto; }
     .filter-group { justify-content: center; }
     .main { padding: 16px; }
-    .data-table th, .data-table td { padding: 10px 12px; font-size: 0.82rem; }
     .stat-card { min-width: 76px; padding: 10px 12px; }
     .stat-value { font-size: 1.2rem; }
+
+    /* Mobile cards (table → card list) */
+    .table-wrapper { min-width: auto; }
+    .data-table thead { display: none; }
+    .data-table, .data-table tbody, .data-table tr, .data-table td {
+        display: block; width: 100%;
+    }
+    .data-table tr {
+        margin-bottom: 14px;
+        background: white;
+        border-radius: 18px;
+        padding: 14px 16px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        border: 1.5px solid #f3f4f6;
+    }
+    .data-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px dashed #e5e7eb;
+        font-size: 0.88rem;
+    }
+    .data-table td:last-child { border-bottom: none; }
+    .data-table td::before {
+        content: attr(data-label);
+        font-weight: 800;
+        color: var(--gray);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .col-no { text-align: right; width: auto; }
+    .col-nama { min-width: auto; flex-direction: column; align-items: flex-start !important; gap: 4px; }
+    .col-nama::before { align-self: flex-start; }
+    .col-status { text-align: right; width: auto; }
+    .col-total { width: auto; flex-direction: column; align-items: flex-start !important; gap: 6px; }
+    .col-total::before { align-self: flex-start; }
+    .nama-text { font-size: 1rem; }
+    .keluarga-pill { display: inline-block; }
+    .progress-bar { width: 100%; }
+
+    /* Mobile popup bottom sheet */
+    .detail-card.mobile-card {
+        width: calc(100% - 32px);
+        left: 16px !important;
+        right: 16px !important;
+        top: auto !important;
+        bottom: 16px !important;
+        max-height: 75vh;
+        transform-origin: bottom center;
+    }
+    .detail-card-overlay.active .detail-card.mobile-card {
+        transform: scale(1);
+    }
 }
 
 /* ── Event Block ── */
