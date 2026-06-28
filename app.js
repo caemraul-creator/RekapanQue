@@ -414,38 +414,57 @@ function openDetailCard(event, nama) {
     `;
 
     const popup = document.getElementById('detailCardOverlay');
+
+    // Render dulu agar bisa ukur tinggi kartu
+    popup.style.visibility = 'hidden';
     popup.classList.add('active');
 
-    // Posisikan popup di dekat baris yang diklik
     const card = popup.querySelector('.detail-card');
     const row = event.currentTarget;
     const rowRect = row.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // Reset dulu
+    // Ukur tinggi kartu setelah render
+    const cardH = card.offsetHeight;
+    const cardW = Math.min(360, vw - 16);
+
     card.style.position = 'fixed';
     card.style.margin = '0';
+    card.style.width = cardW + 'px';
 
-    // Hitung posisi: coba muncul di bawah baris, geser kiri/kanan agar tidak keluar layar
-    let top = rowRect.bottom + 8;
+    // Posisi horizontal: rata kiri dengan baris, jangan keluar kanan/kiri
     let left = rowRect.left;
-
-    // Kalau popup mau keluar dari bawah, muncul di atas baris
-    if (top + 420 > vh) {
-        top = rowRect.top - 8;
-        card.style.transform = 'translateY(-100%) scale(1)';
-    } else {
-        card.style.transform = 'translateY(0) scale(1)';
-    }
-
-    // Jangan sampai keluar dari kanan layar
-    if (left + 360 > vw) left = vw - 368;
+    if (left + cardW > vw - 8) left = vw - cardW - 8;
     if (left < 8) left = 8;
+
+    // Posisi vertikal:
+    // Prioritas: muncul di ATAS baris (lebih natural saat scroll ke bawah)
+    // Fallback: di bawah, jika tidak cukup ruang di atas
+    const spaceAbove = rowRect.top - 8;
+    const spaceBelow = vh - rowRect.bottom - 8;
+
+    let top, transformOrigin;
+    if (spaceAbove >= cardH) {
+        // Cukup ruang di atas → muncul di atas
+        top = rowRect.top - cardH - 6;
+        transformOrigin = 'bottom left';
+    } else if (spaceBelow >= cardH) {
+        // Cukup ruang di bawah → muncul di bawah
+        top = rowRect.bottom + 6;
+        transformOrigin = 'top left';
+    } else {
+        // Tidak cukup dua-duanya → sesuaikan agar tidak keluar layar
+        top = Math.max(8, vh - cardH - 8);
+        transformOrigin = 'top left';
+    }
 
     card.style.top = top + 'px';
     card.style.left = left + 'px';
-    card.style.width = Math.min(360, vw - 16) + 'px';
+    card.style.transformOrigin = transformOrigin;
+
+    // Tampilkan
+    popup.style.visibility = '';
 }
 
 function closeDetailCard() {

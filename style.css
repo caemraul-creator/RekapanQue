@@ -417,14 +417,16 @@ body {
     box-shadow: 0 12px 40px rgba(124,58,237,0.25), 0 2px 8px rgba(0,0,0,0.08);
     position: fixed;
     transform-origin: top left;
-    transform: scale(0.95);
-    transition: opacity 0.2s, transform 0.2s;
+    transform: scale(0.92);
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
     overflow: hidden;
     max-height: 80vh; overflow-y: auto;
     border: 1.5px solid #e9d5ff;
 }
 .detail-card-overlay.active .detail-card {
     transform: scale(1);
+    opacity: 1;
 }
 
 .detail-close-btn {
