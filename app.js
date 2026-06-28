@@ -415,31 +415,49 @@ function openDetailCard(event, nama) {
 
     if (isMobile) {
         card.classList.add('mobile-card');
-        card.style.position = '';
-        card.style.left = '';
-        card.style.top = '';
-        card.style.width = '';
-        card.style.margin = '';
-        card.style.transformOrigin = '';
-        card.style.opacity = '';
+        card.style.cssText = `
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            top: auto;
+            width: auto;
+            margin: 0;
+            transform-origin: bottom center;
+            transform: scale(0.92);
+            opacity: 0;
+            transition: all 0.18s ease;
+        `;
+        requestAnimationFrame(() => {
+            card.style.transform = 'scale(1)';
+            card.style.opacity = '1';
+        });
     } else {
         card.classList.remove('mobile-card');
-        card.style.position = 'fixed';
-        card.style.margin = '0';
-        card.style.opacity = '0';
-        card.style.width = Math.min(360, window.innerWidth - 16) + 'px';
 
         const item = event.currentTarget;
         const itemRect = item.getBoundingClientRect();
         const vw = window.innerWidth;
         const vh = window.innerHeight;
 
-        // Force layout reflow agar ukuran terhitung
-        void card.offsetHeight;
-        const cardRect = card.getBoundingClientRect();
-        const cardH = cardRect.height;
-        const cardW = cardRect.width;
+        // Step 1: measurement state (no transition, invisible, scale 1)
+        card.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: ${Math.min(360, vw - 16)}px;
+            margin: 0;
+            transform: scale(1);
+            opacity: 0;
+            transition: none;
+        `;
 
+        // Step 2: force reflow and measure
+        void card.offsetHeight;
+        const cardH = card.offsetHeight;
+        const cardW = card.offsetWidth;
+
+        // Step 3: calculate position
         let left = itemRect.left;
         if (left + cardW > vw - 8) left = vw - cardW - 8;
         if (left < 8) left = 8;
@@ -459,15 +477,31 @@ function openDetailCard(event, nama) {
             transformOrigin = 'top left';
         }
 
-        card.style.top = top + 'px';
-        card.style.left = left + 'px';
-        card.style.transformOrigin = transformOrigin;
+        // Step 4: set final position with transition
+        card.style.cssText = `
+            position: fixed;
+            top: ${top}px;
+            left: ${left}px;
+            width: ${Math.min(360, vw - 16)}px;
+            margin: 0;
+            transform-origin: ${transformOrigin};
+            transform: scale(0.92);
+            opacity: 0;
+            transition: all 0.18s ease;
+        `;
+
+        // Step 5: force reflow then animate in
+        void card.offsetHeight;
+        card.style.transform = 'scale(1)';
         card.style.opacity = '1';
     }
 }
 
 function closeDetailCard() {
-    document.getElementById('detailCardOverlay').classList.remove('active');
+    const popup = document.getElementById('detailCardOverlay');
+    const card = popup.querySelector('.detail-card');
+    popup.classList.remove('active');
+    if (card) card.style.cssText = '';
 }
 
 function formatTanggalIndo(tanggal) {
