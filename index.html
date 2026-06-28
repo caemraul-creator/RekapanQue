@@ -98,7 +98,15 @@
                 <p>Tidak ada data yang ditampilkan</p>
             </div>
 
-            <!-- Add Payment Modal -->
+            <!-- Detail Card Modal -->
+            <div class="detail-card-overlay" id="detailCardOverlay" onclick="if(event.target===this)closeDetailCard()">
+                <div class="detail-card">
+                    <button class="detail-close-btn" onclick="closeDetailCard()" aria-label="Tutup"><i class="fas fa-times"></i></button>
+                    <div id="detailCardContent"></div>
+                </div>
+            </div>
+
+                        <!-- Add Payment Modal -->
             <div class="modal-overlay" id="modalOverlay">
                 <div class="modal">
                     <div class="modal-header">
