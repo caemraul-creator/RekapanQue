@@ -497,36 +497,6 @@ body {
 }
 .detail-footer-lunas i { margin-right: 5px; }
 
-/* ── Detail Card Bottom Sheet (Mobile) ── */
-.detail-card.bottom-sheet {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    max-height: 85vh !important;
-    border-radius: 24px 24px 0 0 !important;
-    transform: translateY(100%) !important;
-    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1) !important;
-    overflow-y: auto !important;
-    margin: 0 !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-.detail-card.bottom-sheet::before {
-    content: '';
-    display: block;
-    width: 40px;
-    height: 4px;
-    background: #d1d5db;
-    border-radius: 2px;
-    margin: 12px auto 4px;
-}
-.detail-card.bottom-sheet.bottom-sheet-open {
-    transform: translateY(0) !important;
-}
-
 /* ── Responsive ── */
 @media (max-width: 640px) {
     .header-content { flex-direction: column; text-align: center; }
@@ -549,13 +519,15 @@ body {
     }
     .name-text { font-size: 0.95rem; }
 
-    /* Mobile popup */
+    /* Mobile popup: popover mengikuti nama, overlay gelap agar terlihat */
+    .detail-card-overlay {
+        background: rgba(30,27,75,0.35);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+    }
     .detail-card.mobile-card {
-        position: fixed;
-        width: calc(100% - 32px);
-        max-width: 400px;
-        max-height: 80vh;
-        margin: 0;
+        /* posisi diatur via JS (popover), kelas ini hanya penanda */
+        box-shadow: 0 12px 40px rgba(124,58,237,0.35), 0 4px 12px rgba(0,0,0,0.15);
     }
 }
 

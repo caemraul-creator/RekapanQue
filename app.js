@@ -340,10 +340,6 @@ function openDetailCard(event, nama) {
     const person = allData.find(p => p.nama === nama);
     if (!person) return;
 
-    // ── Capture item rect IMMEDIATELY before any async work ──
-    const item = event.currentTarget;
-    const itemRect = item ? item.getBoundingClientRect() : null;
-
     const sisa = Math.max(0, IURAN_PER_ORANG - (person.total || 0));
     const progress = Math.min(100, ((person.total || 0) / IURAN_PER_ORANG) * 100);
     const isLunas = person.status === 'Lunas';
@@ -417,92 +413,112 @@ function openDetailCard(event, nama) {
 
     // ── Reset ──
     popup.classList.remove('active');
-    card.style.cssText = '';
-    card.classList.remove('mobile-card', 'bottom-sheet');
+    if (card) card.style.cssText = '';
+    card.classList.remove('mobile-card');
 
-    if (isMobile) {
-        // ── MOBILE: Bottom sheet (slide up from bottom) ──
-        card.classList.add('bottom-sheet');
-        popup.classList.add('active');
+    // ── Show overlay ──
+    popup.classList.add('active');
+    if (isMobile) card.classList.add('mobile-card');
 
-        requestAnimationFrame(() => {
-            card.classList.add('bottom-sheet-open');
-        });
+    // ── Measure viewport (lebih reliable di mobile pakai visualViewport) ──
+    const vv = window.visualViewport || { width: window.innerWidth, height: window.innerHeight };
+    const vw = vv.width;
+    const vh = vv.height;
+    const gap = 8;
+
+    // ── Lebar kartu ──
+    const cardMaxWidth = isMobile ? Math.min(400, vw - 24) : Math.min(360, vw - 16);
+
+    // Place card at origin, hidden, no transition → measure real size
+    card.style.position = 'fixed';
+    card.style.top = '0';
+    card.style.left = '0';
+    card.style.width = cardMaxWidth + 'px';
+    card.style.margin = '0';
+    card.style.maxHeight = (vh - 2 * gap) + 'px';
+    card.style.overflowY = 'auto';
+    card.style.visibility = 'hidden';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(1)';
+    card.style.transition = 'none';
+
+    void card.offsetHeight;
+    let cardH = card.offsetHeight;
+    const cardW = card.offsetWidth;
+
+    // ── Calculate position ──
+    const item = event.currentTarget;
+    const itemRect = item.getBoundingClientRect();
+
+    // Horizontal: center to item, clamp to viewport
+    let left = itemRect.left + (itemRect.width / 2) - (cardW / 2);
+    left = Math.max(gap, Math.min(left, vw - cardW - gap));
+
+    // Vertical: prefer above, fallback below, fallback clamped center
+    const spaceAbove = itemRect.top - gap;
+    const spaceBelow = vh - itemRect.bottom - gap;
+
+    let top, transformOrigin;
+    if (spaceAbove >= cardH + gap) {
+        // Muat di ATAS nama
+        top = itemRect.top - cardH - gap;
+        transformOrigin = 'bottom center';
+    } else if (spaceBelow >= cardH + gap) {
+        // Muat di BAWAH nama
+        top = itemRect.bottom + gap;
+        transformOrigin = 'top center';
     } else {
-        // ── DESKTOP: Popup anchored to item ──
-        popup.classList.add('active');
-
-        const vw = window.innerWidth;
-        const cardMaxWidth = Math.min(360, vw - 16);
-
-        card.style.position = 'fixed';
-        card.style.top = '0';
-        card.style.left = '0';
-        card.style.width = cardMaxWidth + 'px';
-        card.style.margin = '0';
-        card.style.visibility = 'hidden';
-        card.style.opacity = '0';
-        card.style.transform = 'scale(1)';
-        card.style.transition = 'none';
-
-        void card.offsetHeight;
-        const cardH = card.offsetHeight;
-        const cardW = card.offsetWidth;
-
-        const vh = window.innerHeight;
-        const gap = 8;
-
-        let left = (itemRect ? itemRect.left + itemRect.width / 2 : vw / 2) - cardW / 2;
-        left = Math.max(gap, Math.min(left, vw - cardW - gap));
-
-        const spaceAbove = itemRect ? itemRect.top - gap : 0;
-        const spaceBelow = itemRect ? vh - itemRect.bottom - gap : vh;
-
-        let top, transformOrigin;
-        if (itemRect && spaceAbove >= cardH + gap) {
-            top = itemRect.top - cardH - gap;
+        // Tidak muat penuh di atas maupun bawah → pilih sisi yang lebih luas,
+        // lalu clamp ke viewport (kartu akan di-scroll di dalamnya berkat overflowY:auto)
+        if (spaceAbove >= spaceBelow) {
+            // Sisi atas lebih luas → tempel ke atas nama, kartu tumbuh ke atas tapi di-clamp
+            top = gap;
+            cardH = Math.min(cardH, spaceAbove - gap);
+            card.style.maxHeight = cardH + 'px';
             transformOrigin = 'bottom center';
-        } else if (itemRect && spaceBelow >= cardH + gap) {
-            top = itemRect.bottom + gap;
-            transformOrigin = 'top center';
         } else {
-            top = Math.max(gap, Math.min((vh - cardH) / 2, vh - cardH - gap));
-            transformOrigin = 'center center';
+            // Sisi bawah lebih luas → tempel ke bawah nama
+            top = itemRect.bottom + gap;
+            cardH = Math.min(cardH, spaceBelow - gap);
+            card.style.maxHeight = cardH + 'px';
+            transformOrigin = 'top center';
         }
+    }
 
-        card.style.top = top + 'px';
-        card.style.left = left + 'px';
-        card.style.transformOrigin = transformOrigin;
+    // ── Apply position (still hidden) ──
+    card.style.top = top + 'px';
+    card.style.left = left + 'px';
+    card.style.transformOrigin = transformOrigin;
+
+    // ── Animate in ──
+    requestAnimationFrame(() => {
+        card.style.visibility = 'visible';
+        card.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
+        card.style.transform = 'scale(0.92)';
 
         requestAnimationFrame(() => {
-            card.style.visibility = 'visible';
-            card.style.transition = 'opacity 0.18s ease, transform 0.18s ease';
-            card.style.transform = 'scale(0.92)';
-            requestAnimationFrame(() => {
-                card.style.transform = 'scale(1)';
-                card.style.opacity = '1';
-            });
+            card.style.transform = 'scale(1)';
+            card.style.opacity = '1';
+
+            // ── Safety: kalau ada address bar berubah, re-clamp ke viewport ──
+            const finalRect = card.getBoundingClientRect();
+            const margin = 8;
+            if (finalRect.top < margin) {
+                card.style.top = margin + 'px';
+            } else if (finalRect.bottom > vh - margin) {
+                card.style.top = (vh - finalRect.height - margin) + 'px';
+            }
         });
-    }
+    });
 }
 
 function closeDetailCard() {
     const popup = document.getElementById('detailCardOverlay');
     const card = popup.querySelector('.detail-card');
-
-    if (card && card.classList.contains('bottom-sheet')) {
-        card.classList.remove('bottom-sheet-open');
-        setTimeout(() => {
-            popup.classList.remove('active');
-            card.classList.remove('bottom-sheet', 'mobile-card');
-            card.style.cssText = '';
-        }, 280);
-    } else {
-        popup.classList.remove('active');
-        if (card) {
-            card.style.transition = 'none';
-            card.style.cssText = '';
-        }
+    popup.classList.remove('active');
+    if (card) {
+        card.style.transition = 'none';
+        card.style.cssText = '';
     }
 }
 
