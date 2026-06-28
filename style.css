@@ -562,3 +562,297 @@ body {
         font-size: 0.8rem;
     }
 }
+/* ==========================================
+   DETAIL CARD - KLIK NAMA
+   ========================================== */
+.nama-clickable {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.nama-clickable:hover {
+    color: var(--primary);
+}
+.nama-info-icon {
+    font-size: 0.75rem;
+    color: var(--primary);
+    opacity: 0.5;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+.nama-clickable:hover .nama-info-icon {
+    opacity: 1;
+}
+
+.detail-card-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2500;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+    padding: 20px;
+}
+.detail-card-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.detail-card {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    position: relative;
+    transform: translateY(-16px) scale(0.97);
+    transition: transform 0.3s;
+    overflow: hidden;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.detail-card-overlay.active .detail-card {
+    transform: translateY(0) scale(1);
+}
+
+.detail-close-btn {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: var(--light);
+    border: none;
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    color: var(--gray);
+    font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1;
+    transition: all 0.2s;
+}
+.detail-close-btn:hover {
+    background: #fee2e2;
+    color: var(--danger);
+}
+
+/* Header */
+.detail-header {
+    padding: 20px 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+}
+.detail-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1e40af;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 600;
+    flex-shrink: 0;
+}
+.detail-info {
+    flex: 1;
+}
+.detail-nama {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin: 0 0 2px;
+}
+.detail-keluarga {
+    font-size: 0.8rem;
+    color: var(--gray);
+    margin: 0;
+}
+.detail-keluarga i {
+    font-size: 0.75rem;
+    margin-right: 3px;
+}
+
+/* Progress */
+.detail-progress-section {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+}
+.detail-progress-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--gray);
+    margin-bottom: 6px;
+}
+.detail-progress-amount {
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 0.9rem;
+}
+.detail-progress-target {
+    font-weight: 400;
+    color: var(--gray);
+    font-size: 0.8rem;
+}
+.detail-progress-track {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.detail-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #10b981);
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+.detail-progress-fill.lunas {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+.detail-pct {
+    font-size: 0.8rem;
+    color: var(--gray);
+}
+.detail-sisa {
+    font-size: 0.8rem;
+    color: var(--danger);
+    font-weight: 500;
+}
+.detail-lunas-text {
+    font-size: 0.8rem;
+    color: var(--success);
+    font-weight: 600;
+}
+
+/* Timeline */
+.detail-timeline-section {
+    padding: 16px 20px;
+}
+.detail-timeline-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray);
+    margin: 0 0 12px;
+}
+.detail-timeline-title i {
+    margin-right: 5px;
+}
+.detail-tl-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.detail-tl-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    padding-top: 3px;
+}
+.detail-tl-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--success);
+    flex-shrink: 0;
+}
+.detail-tl-line {
+    width: 1.5px;
+    flex: 1;
+    min-height: 16px;
+    background: var(--border);
+    margin-top: 3px;
+}
+.detail-tl-body {
+    flex: 1;
+    padding-bottom: 12px;
+}
+.detail-tl-border {
+    border-bottom: 1px dashed var(--border);
+    margin-bottom: 4px;
+}
+.detail-tl-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.detail-tl-date {
+    font-size: 0.85rem;
+    color: var(--dark);
+}
+.detail-tl-date i {
+    font-size: 0.75rem;
+    color: var(--gray);
+    margin-right: 4px;
+}
+.detail-tl-amount {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--success);
+}
+.detail-tl-note {
+    font-size: 0.75rem;
+    color: var(--gray);
+    margin-top: 2px;
+    display: block;
+}
+.detail-empty-pay {
+    font-size: 0.85rem;
+    color: var(--gray);
+    font-style: italic;
+    margin: 0;
+}
+.detail-empty-pay i {
+    margin-right: 5px;
+}
+
+/* Footer */
+.detail-footer {
+    padding: 12px 20px 16px;
+}
+.detail-footer-kurang {
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-align: center;
+}
+.detail-footer-kurang i {
+    margin-right: 5px;
+}
+.detail-footer-lunas {
+    background: #d1fae5;
+    color: #065f46;
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-align: center;
+}
+.detail-footer-lunas i {
+    margin-right: 5px;
+}
+
+/* Progress bar di tabel (existing, tambah text) */
+.progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--warning), var(--success));
+    border-radius: 2px;
+}
+.progress-text {
+    font-size: 0.7rem;
+    color: var(--gray);
+}
