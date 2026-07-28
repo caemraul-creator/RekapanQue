@@ -7,7 +7,7 @@
 // ==========================================
 // CONFIGURATION
 // ==========================================
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxmUEcT2ZLVkKbEd6Azr1pzpEJz8ig85cFDEZQ0G9YSb5Q7kX-mlZbe0u8ntEpOeBqu/exec';
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwWGitnYYfouZ4Y5AGLBohRdHcm3sCKyKv51oprp-xnGQundcRqBEXHPsF2wuVCIh-t/exec';
 
 let IURAN_PER_ORANG = 260000;
 let HARGA_TIKET = 75000;
@@ -204,24 +204,17 @@ function updateHeaderStats(tab) {
 async function loadData() {
     showLoading(true);
     try {
-        if (GAS_API_URL.includes('xxxxxxxx')) {
-            await new Promise(r => setTimeout(r, 800));
-            dewasaData = getSampleDewasa();
-            anakData = getSampleAnak();
+        const response = await fetch(`${GAS_API_URL}?action=getData`);
+        const result = await response.json();
+        if (result.success) {
+            dewasaData = result.dewasa || [];
+            anakData = result.anak || [];
+            if (result.targetIuran) IURAN_PER_ORANG = result.targetIuran;
+            if (result.hargaTiket) HARGA_TIKET = result.hargaTiket;
         } else {
-            const response = await fetch(`${GAS_API_URL}?action=getData`);
-            const result = await response.json();
-            if (result.success) {
-                dewasaData = result.dewasa || [];
-                anakData = result.anak || [];
-                if (result.targetIuran) IURAN_PER_ORANG = result.targetIuran;
-                if (result.hargaTiket) HARGA_TIKET = result.hargaTiket;
-            } else {
-                throw new Error(result.message);
-            }
+            throw new Error(result.message);
         }
 
-        // Render sesuai tab aktif
         if (currentTab === 'dewasa') {
             updateHeaderStats('dewasa');
             filterDewasa();
@@ -233,8 +226,8 @@ async function loadData() {
     } catch (error) {
         console.error('Error:', error);
         showToast('Gagal memuat: ' + error.message, 'error');
-        dewasaData = getSampleDewasa();
-        anakData = getSampleAnak();
+        dewasaData = [];
+        anakData = [];
         updateHeaderStats(currentTab);
         if (currentTab === 'dewasa') filterDewasa(); else filterAnak();
     } finally {
@@ -450,16 +443,10 @@ async function saveDewasaPayment() {
     if (jumlah <= 0) { showToast('Jumlah harus > 0!', 'error'); return; }
     showLoading(true);
     try {
-        if (GAS_API_URL.includes('xxxxxxxx')) {
-            await new Promise(r => setTimeout(r, 600));
-            const p = dewasaData.find(x => x.nama === currentEditingPerson);
-            if (p) { p.total = (p.total||0)+jumlah; p.pembayaran.push({tanggal,jumlah,keterangan:'Cicilan'}); p.status = p.total>=IURAN_PER_ORANG?'Lunas':'Belum Lunas'; }
-        } else {
-            const params = new URLSearchParams({ action:'updatePayment', nama:currentEditingPerson, tanggal, jumlah:String(jumlah), keterangan:el.modalKeterangan.value });
-            const r = await fetch(`${GAS_API_URL}?${params}`);
-            const res = await r.json();
-            if (!res.success) throw new Error(res.message);
-        }
+        const params = new URLSearchParams({ action:'updatePayment', nama:currentEditingPerson, tanggal, jumlah:String(jumlah), keterangan:el.modalKeterangan.value });
+        const r = await fetch(`${GAS_API_URL}?${params}`);
+        const res = await r.json();
+        if (!res.success) throw new Error(res.message);
         closeModal(); closeDetailCard(); await loadData(); showToast('Pembayaran berhasil!', 'success');
     } catch (e) { showToast('Gagal: ' + e.message, 'error'); }
     finally { showLoading(false); }
@@ -494,15 +481,10 @@ async function saveTiketAnak() {
     if (!namaAnak) { showToast('Nama anak harus diisi!', 'error'); return; }
     showLoading(true);
     try {
-        if (GAS_API_URL.includes('xxxxxxxx')) {
-            await new Promise(r => setTimeout(r, 600));
-            anakData.push({ no: anakData.length + 51, keluarga, nama: namaAnak, orangTua, pembayaran: [], total: 0, status: 'Belum Lunas' });
-        } else {
-            const params = new URLSearchParams({ action:'addTiketAnak', namaAnak, keluarga, orangTua });
-            const r = await fetch(`${GAS_API_URL}?${params}`);
-            const res = await r.json();
-            if (!res.success) throw new Error(res.message);
-        }
+        const params = new URLSearchParams({ action:'addTiketAnak', namaAnak, keluarga, orangTua });
+        const r = await fetch(`${GAS_API_URL}?${params}`);
+        const res = await r.json();
+        if (!res.success) throw new Error(res.message);
         closeTiketModal(); await loadData(); showToast('Tiket anak ditambahkan!', 'success');
     } catch (e) { showToast('Gagal: ' + e.message, 'error'); }
     finally { showLoading(false); }
@@ -531,16 +513,10 @@ async function saveTiketPayment() {
     if (jumlah <= 0) { showToast('Jumlah harus > 0!', 'error'); return; }
     showLoading(true);
     try {
-        if (GAS_API_URL.includes('xxxxxxxx')) {
-            await new Promise(r => setTimeout(r, 600));
-            const t = anakData.find(x => x.nama === currentEditingAnak);
-            if (t) { t.total = (t.total||0)+jumlah; t.pembayaran.push({tanggal,jumlah,keterangan:'Bayar tiket'}); t.status = t.total>=HARGA_TIKET?'Lunas':'Belum Lunas'; }
-        } else {
-            const params = new URLSearchParams({ action:'updateTiketPayment', namaAnak:currentEditingAnak, tanggal, jumlah:String(jumlah), keterangan:el.tiketPayKeterangan.value });
-            const r = await fetch(`${GAS_API_URL}?${params}`);
-            const res = await r.json();
-            if (!res.success) throw new Error(res.message);
-        }
+        const params = new URLSearchParams({ action:'updateTiketPayment', namaAnak:currentEditingAnak, tanggal, jumlah:String(jumlah), keterangan:el.tiketPayKeterangan.value });
+        const r = await fetch(`${GAS_API_URL}?${params}`);
+        const res = await r.json();
+        if (!res.success) throw new Error(res.message);
         closeTiketPayModal(); closeDetailCard(); await loadData(); showToast('Pembayaran tiket berhasil!', 'success');
     } catch (e) { showToast('Gagal: ' + e.message, 'error'); }
     finally { showLoading(false); }
@@ -571,23 +547,4 @@ function fmtTgl(t) {
     return p.length===3 ? `${parseInt(p[2])} ${B[parseInt(p[1])-1]} ${p[0]}` : t;
 }
 
-// ==========================================
-// SAMPLE DATA
-// ==========================================
-function getSampleDewasa() {
-    return [
-        {no:1,keluarga:'De Is',nama:'De Istiqomah',status:'Lunas',total:260000,pembayaran:[{tanggal:'2026-06-27',jumlah:260000,keterangan:'Lunas'}]},
-        {no:2,keluarga:'De Is',nama:'Ica',status:'Belum Lunas',total:100000,pembayaran:[{tanggal:'2026-06-28',jumlah:100000,keterangan:'Cicilan'}]},
-        {no:3,keluarga:'Dedi',nama:'Dedi',status:'Lunas',total:260000,pembayaran:[{tanggal:'2026-06-28',jumlah:260000,keterangan:'Transfer'}]},
-        {no:4,keluarga:'Dedi',nama:'Faza',status:'Belum Lunas',total:150000,pembayaran:[{tanggal:'2026-06-30',jumlah:150000,keterangan:'Cicilan'}]},
-        {no:5,keluarga:'Syarif',nama:'Syarief',status:'Lunas',total:260000,pembayaran:[{tanggal:'2026-06-27',jumlah:260000,keterangan:'Cash'}]},
-        {no:6,keluarga:'Bella',nama:'Maimon',status:'Lunas',total:260000,pembayaran:[{tanggal:'2026-06-29',jumlah:260000,keterangan:'Transfer'}]},
-    ];
-}
-function getSampleAnak() {
-    return [
-        {no:51,keluarga:'Bella',nama:'Vino',status:'Belum Lunas',total:0,pembayaran:[]},
-        {no:52,keluarga:'Dedi',nama:'Azriel',status:'Belum Lunas',total:0,pembayaran:[]},
-        {no:53,keluarga:'Syarif',nama:'Ratika',status:'Belum Lunas',total:0,pembayaran:[]},
-    ];
-}
+
