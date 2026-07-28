@@ -7,7 +7,7 @@
 // ==========================================
 // CONFIGURATION
 // ==========================================
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwWGitnYYfouZ4Y5AGLBohRdHcm3sCKyKv51oprp-xnGQundcRqBEXHPsF2wuVCIh-t/exec';
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwx8-DYmN4-wtiaK66thorZA8qUfveTbDAPry0AHdziXNOGxwUQkHfVFBY0J0gTq41x/exec';
 
 let IURAN_PER_ORANG = 260000;
 let HARGA_TIKET = 75000;
