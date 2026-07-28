@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🦒 Piknik Keluarga - Gembira Loka Jogja</title>
+    <title>Piknik Keluarga - Gembira Loka Jogja</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,28 +14,28 @@
         <header class="header">
             <div class="header-content">
                 <div class="logo">
-                    <div class="logo-icon">🏕️</div>
+                    <div class="logo-icon">🏃</div>
                     <div class="logo-text">
-                        <h1>Piknik Keluarga 🦒</h1>
+                        <h1>Piknik Keluarga 🦌</h1>
                         <p>Kebun Binatang Gembira Loka, Jogja</p>
                     </div>
                 </div>
-                <div class="header-stats">
+                <div class="header-stats" id="headerStats">
                     <div class="stat-card s-peserta">
-                        <span class="stat-value" id="totalPeserta">0</span>
-                        <span class="stat-label">Peserta</span>
+                        <span class="stat-value" id="statPeserta">0</span>
+                        <span class="stat-label" id="statPesertaLabel">Dewasa</span>
                     </div>
                     <div class="stat-card s-lunas">
-                        <span class="stat-value" id="totalLunas">0</span>
+                        <span class="stat-value" id="statLunas">0</span>
                         <span class="stat-label">Lunas</span>
                     </div>
                     <div class="stat-card s-belum">
-                        <span class="stat-value" id="totalBelum">0</span>
-                        <span class="stat-label">Belum Lunas</span>
+                        <span class="stat-value" id="statBelum">0</span>
+                        <span class="stat-label">Belum</span>
                     </div>
                     <div class="stat-card s-total">
-                        <span class="stat-value" id="totalIuran">Rp 0</span>
-                        <span class="stat-label">Total Terkumpul</span>
+                        <span class="stat-value" id="statTotal">Rp 0</span>
+                        <span class="stat-label">Terkumpul</span>
                     </div>
                 </div>
             </div>
@@ -44,7 +44,6 @@
 
         <!-- Countdown & Info Block -->
         <div class="event-block">
-            <!-- Countdown -->
             <div class="countdown-card">
                 <div class="countdown-label"><i class="fas fa-rocket"></i> Hitung Mundur Keberangkatan</div>
                 <div class="countdown-grid" id="countdownGrid">
@@ -59,10 +58,7 @@
                 <div class="cd-dest"><i class="fas fa-map-marker-alt"></i> Kebun Binatang Gembira Loka, Yogyakarta</div>
             </div>
 
-            <!-- Info Row -->
             <div class="info-cards-row">
-
-                <!-- Cara Bayar -->
                 <div class="info-card ic-bayar">
                     <div class="ic-header"><i class="fas fa-wallet"></i> Cara Pembayaran</div>
                     <div class="ic-body">
@@ -90,7 +86,6 @@
                     </div>
                 </div>
 
-                <!-- Tips -->
                 <div class="info-card ic-tips">
                     <div class="ic-header"><i class="fas fa-lightbulb"></i> Tips Persiapan</div>
                     <div class="ic-body">
@@ -99,19 +94,30 @@
                         <div class="tip-item"><span class="tip-icon">💧</span><span>Bawa minum sendiri, hemat & tetap segar</span></div>
                         <div class="tip-item"><span class="tip-icon">📷</span><span>Charge HP & kamera malam sebelumnya</span></div>
                         <div class="tip-item"><span class="tip-icon">🎒</span><span>Bawa tas kecil</span></div>
-                        <div class="tip-item"><span class="tip-icon">🍱</span><span>Boleh bawa bekal sendiri, ada area piknik di dalam</span></div>
-                        <div class="tip-item"><span class="tip-icon">🧒</span><span>Anak-anak pegang orang tua, jangan sampai hilang!</span></div>
+                        <div class="tip-item"><span class="tip-icon">🍱</span><span>Boleh bawa bekal sendiri, ada area piknik</span></div>
+                        <div class="tip-item"><span class="tip-icon">👶</span><span>Anak-anak pegang orang tua, jangan sampai hilang!</span></div>
                         <div class="tip-item"><span class="tip-icon">💊</span><span>Siapkan obat pribadi & plester di tas</span></div>
                     </div>
                 </div>
-
             </div>
         </div>
 
         <!-- Main Content -->
         <main class="main">
-            <!-- Controls -->
-            <div class="controls">
+            <!-- Tab Switching -->
+            <div class="tab-bar">
+                <button class="tab-btn active" data-tab="dewasa" id="tabDewasa">
+                    <i class="fas fa-user-friends"></i> Iuran Dewasa
+                    <span class="tab-badge">Rp 260.000</span>
+                </button>
+                <button class="tab-btn" data-tab="anak" id="tabAnak">
+                    <i class="fas fa-child"></i> Tiket Anak
+                    <span class="tab-badge">Rp 75.000</span>
+                </button>
+            </div>
+
+            <!-- Controls Dewasa -->
+            <div class="controls" id="controlsDewasa">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" id="searchInput" placeholder="Cari nama atau keluarga...">
@@ -122,7 +128,26 @@
                     <button class="filter-btn" data-filter="belum">Belum Lunas</button>
                 </div>
                 <button class="btn btn-primary" id="btnRefresh">
-                    <i class="fas fa-sync-alt"></i> Refresh Data
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <!-- Controls Tiket Anak -->
+            <div class="controls hidden" id="controlsAnak">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInputAnak" placeholder="Cari nama anak...">
+                </div>
+                <div class="filter-group">
+                    <button class="filter-btn-anak active" data-filter-anak="all">Semua</button>
+                    <button class="filter-btn-anak" data-filter-anak="lunas">Lunas</button>
+                    <button class="filter-btn-anak" data-filter-anak="belum">Belum Lunas</button>
+                </div>
+                <button class="btn btn-kid" id="btnAddTiket">
+                    <i class="fas fa-plus"></i> Tambah Anak
+                </button>
+                <button class="btn btn-primary" id="btnRefreshAnak">
+                    <i class="fas fa-sync-alt"></i> Refresh
                 </button>
             </div>
 
@@ -132,9 +157,14 @@
                 <p>Memuat data...</p>
             </div>
 
-            <!-- Name List Container -->
+            <!-- Dewasa List -->
             <div class="name-list-container" id="tableContainer">
                 <div class="name-list" id="nameList"></div>
+            </div>
+
+            <!-- Anak List -->
+            <div class="name-list-container hidden" id="tiketTableContainer">
+                <div class="tiket-list" id="tiketList"></div>
             </div>
 
             <!-- Empty State -->
@@ -143,15 +173,10 @@
                 <p>Tidak ada data yang ditampilkan</p>
             </div>
 
-            <!-- Detail Card Modal -->
-            <div class="detail-card-overlay" id="detailCardOverlay" onclick="if(event.target===this)closeDetailCard()">
-                <div class="detail-card">
-                    <button class="detail-close-btn" onclick="closeDetailCard()" aria-label="Tutup"><i class="fas fa-times"></i></button>
-                    <div id="detailCardContent"></div>
-                </div>
-            </div>
+            <!-- Detail Card Overlay (legacy, kept for compatibility) -->
+            <div class="detail-card-overlay hidden" id="detailCardOverlay"></div>
 
-                        <!-- Add Payment Modal -->
+            <!-- Modal Update Pembayaran Dewasa -->
             <div class="modal-overlay" id="modalOverlay">
                 <div class="modal">
                     <div class="modal-header">
@@ -177,7 +202,7 @@
                         </div>
                         <div class="form-group">
                             <label>Keterangan</label>
-                            <textarea id="modalKeterangan" rows="2" placeholder="Opsional: keterangan pembayaran"></textarea>
+                            <textarea id="modalKeterangan" rows="2" placeholder="Opsional"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -188,11 +213,85 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Modal Tambah Tiket Anak -->
+            <div class="modal-overlay" id="modalTiketOverlay">
+                <div class="modal">
+                    <div class="modal-header modal-header-kid">
+                        <h3><i class="fas fa-child"></i> Tambah Tiket Anak</h3>
+                        <button class="btn-close" id="btnCloseTiketModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="tiket-price-badge">
+                            <i class="fas fa-ticket-alt"></i> Harga per tiket: <strong>Rp 75.000</strong>
+                        </div>
+                        <div class="form-group">
+                            <label>Nama Anak</label>
+                            <input type="text" id="tiketNamaAnak" placeholder="Nama anak">
+                        </div>
+                        <div class="form-group">
+                            <label>Keluarga</label>
+                            <input type="text" id="tiketKeluarga" placeholder="Nama keluarga">
+                        </div>
+                        <div class="form-group">
+                            <label>Orang Tua</label>
+                            <select id="tiketOrangTua">
+                                <option value="">-- Pilih orang tua --</option>
+                            </select>
+                            <small class="form-hint">Pilih dari daftar peserta dewasa, atau kosongkan</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer modal-footer-kid">
+                        <button class="btn btn-secondary" id="btnCancelTiket">Batal</button>
+                        <button class="btn btn-success" id="btnSaveTiket">
+                            <i class="fas fa-save"></i> Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Bayar Tiket Anak -->
+            <div class="modal-overlay" id="modalTiketPayOverlay">
+                <div class="modal">
+                    <div class="modal-header modal-header-kid">
+                        <h3><i class="fas fa-money-bill-wave"></i> Bayar Tiket Anak</h3>
+                        <button class="btn-close" id="btnCloseTiketPay">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nama Anak</label>
+                            <input type="text" id="tiketPayNama" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Keluarga</label>
+                            <input type="text" id="tiketPayKeluarga" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Tanggal</label>
+                            <input type="date" id="tiketPayTanggal">
+                        </div>
+                        <div class="form-group">
+                            <label>Jumlah Pembayaran (Rp)</label>
+                            <input type="number" id="tiketPayJumlah" placeholder="Masukkan jumlah pembayaran">
+                        </div>
+                        <div class="form-group">
+                            <label>Keterangan</label>
+                            <textarea id="tiketPayKeterangan" rows="2" placeholder="Opsional"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer modal-footer-kid">
+                        <button class="btn btn-secondary" id="btnCancelTiketPay">Batal</button>
+                        <button class="btn btn-success" id="btnSaveTiketPay">
+                            <i class="fas fa-save"></i> Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <!-- Footer -->
         <footer class="footer">
-            <p>🦒 Piknik Keluarga · Gembira Loka, Jogja · Dibuat dengan <i class="fas fa-heart"></i></p>
+            <p>🦌 Piknik Keluarga · Gembira Loka, Jogja · Dibuat dengan <i class="fas fa-heart"></i></p>
         </footer>
     </div>
 
@@ -208,32 +307,25 @@
 // COUNTDOWN - Gembira Loka Jogja
 // ==========================================
 (function() {
-    // Tanggal acara: ganti sesuai tanggal pasti keberangkatan
     const TARGET_DATE = new Date('2026-08-15T07:00:00');
-
     function pad(n) { return String(n).padStart(2, '0'); }
-
     function updateCountdown() {
         const now = new Date();
         const diff = TARGET_DATE - now;
-
         if (diff <= 0) {
             document.getElementById('countdownGrid').innerHTML =
-                '<div class="cd-done">🎉 Waktunya Piknik! Selamat Jalan! 🦒</div>';
+                '<div class="cd-done">Waktunya Piknik! Selamat Jalan!</div>';
             return;
         }
-
         const days  = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const mins  = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const secs  = Math.floor((diff % (1000 * 60)) / 1000);
-
         document.getElementById('cdDays').textContent  = pad(days);
         document.getElementById('cdHours').textContent = pad(hours);
         document.getElementById('cdMins').textContent  = pad(mins);
         document.getElementById('cdSecs').textContent  = pad(secs);
     }
-
     updateCountdown();
     setInterval(updateCountdown, 1000);
 })();
