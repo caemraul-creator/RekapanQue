@@ -1,5 +1,6 @@
 /**
- * Rekapan Iuran Piknik Keluarga - Frontend App v2
+ * Rekapan Iuran Piknik Keluarga - Frontend App v4
+ * DEWASA + ANAK dari 1 Sheet (baris 2-49 dewasa, 50+ anak)
  * SEMUA REQUEST PAKAI GET (CORS-safe)
  */
 
@@ -8,41 +9,83 @@
 // ==========================================
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwWGitnYYfouZ4Y5AGLBohRdHcm3sCKyKv51oprp-xnGQundcRqBEXHPsF2wuVCIh-t/exec';
 
-// Target iuran default (akan di-overwrite dari API)
 let IURAN_PER_ORANG = 260000;
+let HARGA_TIKET = 75000;
 
 // ==========================================
 // STATE
 // ==========================================
-let allData = [];
+let dewasaData = [];
+let anakData = [];
 let currentFilter = 'all';
+let currentFilterAnak = 'all';
+let currentTab = 'dewasa';
 
 // ==========================================
 // DOM ELEMENTS
 // ==========================================
-const elements = {
-    loadingOverlay: document.getElementById('loadingOverlay'),
-    nameList: document.getElementById('nameList'),
-    searchInput: document.getElementById('searchInput'),
-    btnRefresh: document.getElementById('btnRefresh'),
+const $ = id => document.getElementById(id);
+
+const el = {
+    loadingOverlay: $('loadingOverlay'),
+    nameList: $('nameList'),
+    searchInput: $('searchInput'),
+    btnRefresh: $('btnRefresh'),
     filterBtns: document.querySelectorAll('.filter-btn'),
-    modalOverlay: document.getElementById('modalOverlay'),
-    btnCloseModal: document.getElementById('btnCloseModal'),
-    btnCancel: document.getElementById('btnCancel'),
-    btnSave: document.getElementById('btnSave'),
-    modalNama: document.getElementById('modalNama'),
-    modalKeluarga: document.getElementById('modalKeluarga'),
-    modalTanggal: document.getElementById('modalTanggal'),
-    modalJumlah: document.getElementById('modalJumlah'),
-    modalKeterangan: document.getElementById('modalKeterangan'),
-    toast: document.getElementById('toast'),
-    toastMessage: document.getElementById('toastMessage'),
-    totalPeserta: document.getElementById('totalPeserta'),
-    totalLunas: document.getElementById('totalLunas'),
-    totalBelum: document.getElementById('totalBelum'),
-    totalIuran: document.getElementById('totalIuran'),
-    emptyState: document.getElementById('emptyState'),
-    tableContainer: document.getElementById('tableContainer')
+    modalOverlay: $('modalOverlay'),
+    btnCloseModal: $('btnCloseModal'),
+    btnCancel: $('btnCancel'),
+    btnSave: $('btnSave'),
+    modalNama: $('modalNama'),
+    modalKeluarga: $('modalKeluarga'),
+    modalTanggal: $('modalTanggal'),
+    modalJumlah: $('modalJumlah'),
+    modalKeterangan: $('modalKeterangan'),
+    emptyState: $('emptyState'),
+    tableContainer: $('tableContainer'),
+
+    // Anak
+    tiketList: $('tiketList'),
+    searchInputAnak: $('searchInputAnak'),
+    btnRefreshAnak: $('btnRefreshAnak'),
+    btnAddTiket: $('btnAddTiket'),
+    filterBtnsAnak: document.querySelectorAll('.filter-btn-anak'),
+    tiketTableContainer: $('tiketTableContainer'),
+    controlsDewasa: $('controlsDewasa'),
+    controlsAnak: $('controlsAnak'),
+
+    // Header stats (dynamic)
+    statPeserta: $('statPeserta'),
+    statLunas: $('statLunas'),
+    statBelum: $('statBelum'),
+    statTotal: $('statTotal'),
+    statPesertaLabel: $('statPesertaLabel'),
+
+    // Tabs
+    tabDewasa: $('tabDewasa'),
+    tabAnak: $('tabAnak'),
+
+    // Modals
+    modalTiketOverlay: $('modalTiketOverlay'),
+    btnCloseTiketModal: $('btnCloseTiketModal'),
+    btnCancelTiket: $('btnCancelTiket'),
+    btnSaveTiket: $('btnSaveTiket'),
+    tiketNamaAnak: $('tiketNamaAnak'),
+    tiketKeluarga: $('tiketKeluarga'),
+    tiketOrangTua: $('tiketOrangTua'),
+
+    modalTiketPayOverlay: $('modalTiketPayOverlay'),
+    btnCloseTiketPay: $('btnCloseTiketPay'),
+    btnCancelTiketPay: $('btnCancelTiketPay'),
+    btnSaveTiketPay: $('btnSaveTiketPay'),
+    tiketPayNama: $('tiketPayNama'),
+    tiketPayKeluarga: $('tiketPayKeluarga'),
+    tiketPayTanggal: $('tiketPayTanggal'),
+    tiketPayJumlah: $('tiketPayJumlah'),
+    tiketPayKeterangan: $('tiketPayKeterangan'),
+
+    toast: $('toast'),
+    toastMessage: $('toastMessage')
 };
 
 // ==========================================
@@ -54,300 +97,231 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-    elements.searchInput.addEventListener('input', debounce(filterData, 300));
-    elements.btnRefresh.addEventListener('click', loadData);
-    
-    elements.filterBtns.forEach(btn => {
+    // Dewasa
+    el.searchInput.addEventListener('input', debounce(filterDewasa, 300));
+    el.btnRefresh.addEventListener('click', loadData);
+    el.filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            elements.filterBtns.forEach(b => b.classList.remove('active'));
+            el.filterBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentFilter = btn.dataset.filter;
-            filterData();
+            filterDewasa();
         });
     });
-    
-    elements.btnCloseModal.addEventListener('click', closeModal);
-    elements.btnCancel.addEventListener('click', closeModal);
-    elements.modalOverlay.addEventListener('click', (e) => {
-        if (e.target === elements.modalOverlay) closeModal();
+    el.btnCloseModal.addEventListener('click', closeModal);
+    el.btnCancel.addEventListener('click', closeModal);
+    el.modalOverlay.addEventListener('click', e => { if (e.target === el.modalOverlay) closeModal(); });
+    el.btnSave.addEventListener('click', saveDewasaPayment);
+
+    // Anak
+    el.searchInputAnak.addEventListener('input', debounce(filterAnak, 300));
+    el.btnRefreshAnak.addEventListener('click', loadData);
+    el.btnAddTiket.addEventListener('click', openAddTiketModal);
+    el.filterBtnsAnak.forEach(btn => {
+        btn.addEventListener('click', () => {
+            el.filterBtnsAnak.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilterAnak = btn.dataset.filterAnak;
+            filterAnak();
+        });
     });
-    
-    elements.btnSave.addEventListener('click', savePayment);
+
+    // Tiket modals
+    el.btnCloseTiketModal.addEventListener('click', closeTiketModal);
+    el.btnCancelTiket.addEventListener('click', closeTiketModal);
+    el.modalTiketOverlay.addEventListener('click', e => { if (e.target === el.modalTiketOverlay) closeTiketModal(); });
+    el.btnSaveTiket.addEventListener('click', saveTiketAnak);
+
+    el.btnCloseTiketPay.addEventListener('click', closeTiketPayModal);
+    el.btnCancelTiketPay.addEventListener('click', closeTiketPayModal);
+    el.modalTiketPayOverlay.addEventListener('click', e => { if (e.target === el.modalTiketPayOverlay) closeTiketPayModal(); });
+    el.btnSaveTiketPay.addEventListener('click', saveTiketPayment);
+
+    // Tabs
+    el.tabDewasa.addEventListener('click', () => switchTab('dewasa'));
+    el.tabAnak.addEventListener('click', () => switchTab('anak'));
+
+    // Escape
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeDetailCard(); closeTiketDetailCard(); }
+    });
 }
 
 // ==========================================
-// DATA LOADING (GET - CORS SAFE)
+// TAB SWITCHING
+// ==========================================
+function switchTab(tab) {
+    currentTab = tab;
+    closeDetailCard();
+    closeTiketDetailCard();
+
+    if (tab === 'dewasa') {
+        el.tabDewasa.classList.add('active');
+        el.tabAnak.classList.remove('active');
+        el.controlsDewasa.classList.remove('hidden');
+        el.controlsAnak.classList.add('hidden');
+        el.tableContainer.classList.remove('hidden');
+        el.tiketTableContainer.classList.add('hidden');
+        updateHeaderStats('dewasa');
+        filterDewasa();
+    } else {
+        el.tabAnak.classList.add('active');
+        el.tabDewasa.classList.remove('active');
+        el.controlsDewasa.classList.add('hidden');
+        el.controlsAnak.classList.remove('hidden');
+        el.tableContainer.classList.add('hidden');
+        el.tiketTableContainer.classList.remove('hidden');
+        updateHeaderStats('anak');
+        filterAnak();
+    }
+}
+
+// ==========================================
+// HEADER STATS (dynamic per tab)
+// ==========================================
+function updateHeaderStats(tab) {
+    let data, target, label;
+    if (tab === 'dewasa') {
+        data = dewasaData; target = IURAN_PER_ORANG; label = 'Dewasa';
+    } else {
+        data = anakData; target = HARGA_TIKET; label = 'Anak';
+    }
+    const total = data.length;
+    const lunas = data.filter(p => p.status === 'Lunas').length;
+    const belum = total - lunas;
+    const revenue = data.reduce((s, p) => s + (p.total || 0), 0);
+
+    el.statPesertaLabel.textContent = label;
+    animateValue(el.statPeserta, parseInt(el.statPeserta.textContent) || 0, total, 600);
+    animateValue(el.statLunas, parseInt(el.statLunas.textContent) || 0, lunas, 600);
+    animateValue(el.statBelum, parseInt(el.statBelum.textContent) || 0, belum, 600);
+    el.statTotal.textContent = formatRupiah(revenue);
+}
+
+// ==========================================
+// DATA LOADING (1 API call)
 // ==========================================
 async function loadData() {
     showLoading(true);
-    
     try {
         if (GAS_API_URL.includes('xxxxxxxx')) {
-            console.log('API URL masih default, menggunakan data sample...');
-            await new Promise(r => setTimeout(r, 1000));
-            allData = getSampleData();
+            await new Promise(r => setTimeout(r, 800));
+            dewasaData = getSampleDewasa();
+            anakData = getSampleAnak();
         } else {
-            // GET request - tidak butuh preflight CORS
             const response = await fetch(`${GAS_API_URL}?action=getData`);
             const result = await response.json();
-            
             if (result.success) {
-                allData = result.data;
-                // Update target iuran dari server
-                if (result.targetIuran) {
-                    IURAN_PER_ORANG = result.targetIuran;
-                }
+                dewasaData = result.dewasa || [];
+                anakData = result.anak || [];
+                if (result.targetIuran) IURAN_PER_ORANG = result.targetIuran;
+                if (result.hargaTiket) HARGA_TIKET = result.hargaTiket;
             } else {
                 throw new Error(result.message);
             }
         }
-        
-        updateStats();
-        filterData();
+
+        // Render sesuai tab aktif
+        if (currentTab === 'dewasa') {
+            updateHeaderStats('dewasa');
+            filterDewasa();
+        } else {
+            updateHeaderStats('anak');
+            filterAnak();
+        }
         showToast('Data berhasil dimuat!', 'success');
     } catch (error) {
-        console.error('Error loading data:', error);
-        showToast('Gagal memuat data: ' + error.message, 'error');
-        allData = getSampleData();
-        updateStats();
-        filterData();
+        console.error('Error:', error);
+        showToast('Gagal memuat: ' + error.message, 'error');
+        dewasaData = getSampleDewasa();
+        anakData = getSampleAnak();
+        updateHeaderStats(currentTab);
+        if (currentTab === 'dewasa') filterDewasa(); else filterAnak();
     } finally {
         showLoading(false);
     }
 }
 
-function updateStats() {
-    const totalPeserta = allData.length;
-    const totalLunas = allData.filter(p => p.status === 'Lunas').length;
-    const totalBelum = totalPeserta - totalLunas;
-    const totalIuran = allData.reduce((sum, p) => sum + (p.total || 0), 0);
-    
-    animateValue(elements.totalPeserta, 0, totalPeserta, 1000);
-    animateValue(elements.totalLunas, 0, totalLunas, 1000);
-    animateValue(elements.totalBelum, 0, totalBelum, 1000);
-    elements.totalIuran.textContent = formatRupiah(totalIuran);
-}
-
 // ==========================================
-// FILTER & DISPLAY
+// DEWASA: FILTER & RENDER
 // ==========================================
-function filterData() {
-    const searchTerm = elements.searchInput.value.toLowerCase().trim();
-    
-    let filtered = allData.filter(person => {
-        const matchSearch = !searchTerm || 
-            person.nama.toLowerCase().includes(searchTerm) ||
-            person.keluarga.toLowerCase().includes(searchTerm);
-        
-        let matchStatus = true;
-        if (currentFilter === 'lunas') matchStatus = person.status === 'Lunas';
-        if (currentFilter === 'belum') matchStatus = person.status === 'Belum Lunas';
-        
-        return matchSearch && matchStatus;
+function filterDewasa() {
+    const q = el.searchInput.value.toLowerCase().trim();
+    let filtered = dewasaData.filter(p => {
+        const match = !q || p.nama.toLowerCase().includes(q) || p.keluarga.toLowerCase().includes(q);
+        let statusOk = true;
+        if (currentFilter === 'lunas') statusOk = p.status === 'Lunas';
+        if (currentFilter === 'belum') statusOk = p.status === 'Belum Lunas';
+        return match && statusOk;
     });
-    
-    renderList(filtered);
+    renderDewasaList(filtered);
 }
 
-function renderList(data) {
-    if (data.length === 0) {
-        elements.tableContainer.style.display = 'none';
-        elements.emptyState.style.display = 'block';
-        return;
-    }
-    
-    elements.tableContainer.style.display = 'block';
-    elements.emptyState.style.display = 'none';
-    
-    elements.nameList.innerHTML = data.map((person, idx) => {
-        const isLunas = person.status === 'Lunas';
-        const statusBorder = isLunas ? 'var(--success)' : 'var(--danger)';
-        const statusBg = isLunas ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.06)';
-        
-        return `
-            <div onclick="event.stopPropagation(); openDetailCard(event, '${escapeHtml(person.nama)}')" class="name-item" style="border-left-color: ${statusBorder}; background: ${statusBg};">
-                <span class="name-text">${escapeHtml(person.nama)}</span>
-                <span class="name-status-dot ${isLunas ? 'dot-lunas' : 'dot-belum'}"></span>
-            </div>
-        `;
+function renderDewasaList(data) {
+    if (!data.length) { el.tableContainer.style.display = 'none'; el.emptyState.style.display = 'block'; return; }
+    el.tableContainer.style.display = 'block'; el.emptyState.style.display = 'none';
+    el.nameList.innerHTML = data.map(p => {
+        const ok = p.status === 'Lunas';
+        return `<div onclick="event.stopPropagation(); openDetailCard(event, '${esc(p.nama)}','dewasa')" class="name-item" style="border-left-color:${ok?'var(--success)':'var(--danger)'};background:${ok?'rgba(16,185,129,0.08)':'rgba(239,68,68,0.06)'};"><span class="name-text">${esc(p.nama)}</span><span class="name-status-dot ${ok?'dot-lunas':'dot-belum'}"></span></div>`;
     }).join('');
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+// ==========================================
+// ANAK: FILTER & RENDER
+// ==========================================
+function filterAnak() {
+    const q = el.searchInputAnak.value.toLowerCase().trim();
+    let filtered = anakData.filter(p => {
+        const match = !q || p.nama.toLowerCase().includes(q) || p.keluarga.toLowerCase().includes(q);
+        let statusOk = true;
+        if (currentFilterAnak === 'lunas') statusOk = p.status === 'Lunas';
+        if (currentFilterAnak === 'belum') statusOk = p.status === 'Belum Lunas';
+        return match && statusOk;
+    });
+    renderAnakList(filtered);
+}
+
+function renderAnakList(data) {
+    if (!data.length) { el.tiketTableContainer.style.display = 'none'; el.emptyState.style.display = 'block'; return; }
+    el.tiketTableContainer.style.display = 'block'; el.emptyState.style.display = 'none';
+    el.tiketList.innerHTML = data.map(p => {
+        const ok = p.status === 'Lunas';
+        return `
+        <div onclick="event.stopPropagation(); openDetailCard(event, '${esc(p.nama)}','anak')" class="kid-item" style="border-left-color:${ok?'#10b981':'#f97316'};background:${ok?'rgba(16,185,129,0.06)':'rgba(249,115,22,0.05)'};">
+            <div class="kid-item-left">
+                <span class="kid-emoji">${ok?'🎉':'🧒'}</span>
+                <div class="kid-item-info">
+                    <span class="kid-name">${esc(p.nama)}</span>
+                    <span class="kid-family">${esc(p.keluarga || '-')}</span>
+                </div>
+            </div>
+            <span class="kid-amount">${ok?'<span class=\'kid-lunas-text\'>Lunas</span>':formatRupiah(p.total||0)}</span>
+        </div>`;
+    }).join('');
 }
 
 // ==========================================
-// MODAL & PAYMENT (GET - CORS SAFE)
-// ==========================================
-let currentEditingPerson = null;
-let currentEditingDate = null;
-
-function openPaymentModal(nama, keluarga, tanggal) {
-    currentEditingPerson = nama;
-    currentEditingDate = tanggal;
-    
-    elements.modalNama.value = nama;
-    elements.modalKeluarga.value = keluarga || '-';
-    elements.modalTanggal.value = tanggal || new Date().toISOString().split('T')[0];
-    elements.modalJumlah.value = '';
-    elements.modalKeterangan.value = '';
-    
-    elements.modalOverlay.classList.add('active');
-}
-
-function closeModal() {
-    elements.modalOverlay.classList.remove('active');
-    currentEditingPerson = null;
-    currentEditingDate = null;
-}
-
-async function savePayment() {
-    const jumlah = parseInt(elements.modalJumlah.value) || 0;
-    const tanggal = elements.modalTanggal.value;
-    const keterangan = elements.modalKeterangan.value;
-    
-    if (jumlah <= 0) {
-        showToast('Jumlah pembayaran harus lebih dari 0!', 'error');
-        return;
-    }
-    
-    showLoading(true);
-    
-    try {
-        if (GAS_API_URL.includes('xxxxxxxx')) {
-            // Demo mode - update local data
-            await new Promise(r => setTimeout(r, 800));
-            const person = allData.find(p => p.nama === currentEditingPerson);
-            if (person) {
-                person.total = (person.total || 0) + jumlah;
-                if (!person.pembayaran) person.pembayaran = [];
-                person.pembayaran.push({ tanggal, jumlah, keterangan });
-                person.status = person.total >= IURAN_PER_ORANG ? 'Lunas' : 'Belum Lunas';
-            }
-        } else {
-            // GET request dengan query parameter - CORS safe!
-            const params = new URLSearchParams({
-                action: 'updatePayment',
-                nama: currentEditingPerson,
-                tanggal: tanggal,
-                jumlah: jumlah.toString(),
-                keterangan: keterangan
-            });
-            
-            const response = await fetch(`${GAS_API_URL}?${params.toString()}`);
-            const result = await response.json();
-            
-            if (!result.success) throw new Error(result.message);
-        }
-        
-        closeModal();
-        await loadData(); // Refresh data dari server
-        showToast('Pembayaran berhasil disimpan!', 'success');
-    } catch (error) {
-        showToast('Gagal menyimpan: ' + error.message, 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// ==========================================
-// UTILITIES
-// ==========================================
-function showLoading(show) {
-    elements.loadingOverlay.classList.toggle('hidden', !show);
-}
-
-function showToast(message, type = 'success') {
-    elements.toastMessage.textContent = message;
-    elements.toast.className = 'toast';
-    if (type === 'error') elements.toast.classList.add('error');
-    
-    elements.toast.classList.add('show');
-    setTimeout(() => elements.toast.classList.remove('show'), 3000);
-}
-
-function formatRupiah(angka) {
-    return 'Rp ' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-function animateValue(element, start, end, duration) {
-    const range = end - start;
-    const increment = range / (duration / 16);
-    let current = start;
-    
-    const timer = setInterval(() => {
-        current += increment;
-        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
-            element.textContent = end;
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.floor(current);
-        }
-    }, 16);
-}
-
-// ==========================================
-// SAMPLE DATA (Demo Mode - Target 260.000)
-// ==========================================
-function getSampleData() {
-    return [
-        { no: 1, keluarga: 'De Is', nama: 'De Istiqomah', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-27', jumlah: 260000, keterangan: 'Lunas cash' }] },
-        { no: 2, keluarga: 'De Is', nama: 'Ica', status: 'Belum Lunas', total: 100000, pembayaran: [{ tanggal: '2026-06-28', jumlah: 100000, keterangan: 'Cicilan 1' }] },
-        { no: 3, keluarga: 'Dedi', nama: 'Dedi', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-28', jumlah: 260000, keterangan: 'Transfer' }] },
-        { no: 4, keluarga: 'Dedi', nama: 'Faza', status: 'Belum Lunas', total: 150000, pembayaran: [{ tanggal: '2026-06-30', jumlah: 150000, keterangan: 'Cicilan' }] },
-        { no: 5, keluarga: 'Syarif', nama: 'Syarief', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-27', jumlah: 260000, keterangan: 'Cash' }] },
-        { no: 6, keluarga: 'Syarif', nama: 'Adey', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 7, keluarga: 'Bella', nama: 'Maimon', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-29', jumlah: 260000, keterangan: 'Transfer' }] },
-        { no: 8, keluarga: 'Bella', nama: 'Bella', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 9, keluarga: 'Bella', nama: 'De Solekan', status: 'Belum Lunas', total: 200000, pembayaran: [{ tanggal: '2026-07-01', jumlah: 200000, keterangan: 'Cicilan' }] },
-        { no: 10, keluarga: 'Bella', nama: 'De Nur', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 11, keluarga: 'Bella', nama: 'Mujib', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 12, keluarga: 'De Arif', nama: 'De Arif', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-06-30', jumlah: 260000, keterangan: 'Cash' }] },
-        { no: 13, keluarga: 'De Arif', nama: 'De Khanif', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 14, keluarga: 'De Arif', nama: 'Lina', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 15, keluarga: 'Iwan', nama: 'Iwan', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-07-01', jumlah: 260000, keterangan: 'Transfer' }] },
-        { no: 16, keluarga: 'Iwan', nama: 'Vira', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 17, keluarga: 'Imdad', nama: 'Imdad', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-07-02', jumlah: 260000, keterangan: 'Cash' }] },
-        { no: 18, keluarga: 'Imdad', nama: 'Vina', status: 'Belum Lunas', total: 0, pembayaran: [] },
-        { no: 19, keluarga: 'De Tando', nama: 'De Tandho', status: 'Lunas', total: 260000, pembayaran: [{ tanggal: '2026-07-03', jumlah: 260000, keterangan: 'Transfer' }] },
-        { no: 20, keluarga: 'De Tando', nama: 'De Hidayah', status: 'Belum Lunas', total: 0, pembayaran: [] },
-    ];
-}
-
-// ==========================================
-// DETAIL CARD - KLIK NAMA
+// DETAIL CARD (shared for dewasa & anak)
 // ==========================================
 let currentOpenName = null;
+let currentOpenType = null;
 
-function openDetailCard(event, nama) {
-    const person = allData.find(p => p.nama === nama);
+function openDetailCard(event, nama, type) {
+    const data = type === 'dewasa' ? dewasaData : anakData;
+    const person = data.find(p => p.nama === nama);
     if (!person) return;
 
-    const sisa = Math.max(0, IURAN_PER_ORANG - (person.total || 0));
-    const progress = Math.min(100, ((person.total || 0) / IURAN_PER_ORANG) * 100);
+    const target = type === 'dewasa' ? IURAN_PER_ORANG : HARGA_TIKET;
+    const isKid = type === 'anak';
+    const sisa = Math.max(0, target - (person.total || 0));
+    const progress = Math.min(100, ((person.total || 0) / target) * 100);
     const isLunas = person.status === 'Lunas';
     const cicilanCount = person.pembayaran ? person.pembayaran.length : 0;
-
     const initials = nama.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    const themeColor = isKid ? '#f97316' : '#7c3aed';
+    const themeBg = isKid ? 'linear-gradient(135deg, #fff7ed, #ffedd5)' : 'linear-gradient(135deg, #ede9fe, #fce7f3)';
+    const themeBorder = isKid ? '#fdba74' : '#c4b5fd';
+    const avatarBg = isKid ? 'linear-gradient(135deg, #f97316, #f59e0b)' : 'linear-gradient(135deg, #7c3aed, #ec4899)';
 
     let timelineHTML = '';
     if (person.pembayaran && person.pembayaran.length > 0) {
@@ -356,15 +330,15 @@ function openDetailCard(event, nama) {
             return `
             <div class="detail-tl-item">
                 <div class="detail-tl-connector">
-                    <div class="detail-tl-dot"></div>
+                    <div class="detail-tl-dot" style="background:linear-gradient(135deg,${themeColor},${isKid?'#f59e0b':'#ec4899'})"></div>
                     ${!isLast ? '<div class="detail-tl-line"></div>' : ''}
                 </div>
                 <div class="detail-tl-body ${!isLast ? 'detail-tl-border' : ''}">
                     <div class="detail-tl-row">
-                        <span class="detail-tl-date"><i class="fas fa-calendar-day"></i> ${formatTanggalIndo(p.tanggal)}</span>
+                        <span class="detail-tl-date"><i class="fas fa-calendar-day"></i> ${fmtTgl(p.tanggal)}</span>
                         <span class="detail-tl-amount">+${formatRupiah(p.jumlah)}</span>
                     </div>
-                    ${p.keterangan ? `<span class="detail-tl-note">${escapeHtml(p.keterangan)}</span>` : ''}
+                    ${p.keterangan ? `<span class="detail-tl-note">${esc(p.keterangan)}</span>` : ''}
                 </div>
             </div>`;
         }).join('');
@@ -373,29 +347,36 @@ function openDetailCard(event, nama) {
     }
 
     const footerHTML = isLunas
-        ? `<div class="detail-footer-lunas"><i class="fas fa-check-circle"></i> Lunas! Terima kasih sudah membayar penuh.</div>`
+        ? `<div class="detail-footer-lunas"><i class="fas fa-check-circle"></i> Lunas! Terima kasih.</div>`
         : `<div class="detail-footer-kurang"><i class="fas fa-exclamation-triangle"></i> Masih kurang <strong>${formatRupiah(sisa)}</strong> lagi</div>`;
 
+    const payBtn = (!isLunas && isKid)
+        ? `<div class="detail-tiket-actions"><button class="btn btn-kid" onclick="openTiketPayModal('${esc(nama)}','${esc(person.keluarga||'')}')"><i class="fas fa-money-bill-wave"></i> Bayar Tiket</button></div>`
+        : (!isLunas && !isKid)
+        ? `<div class="detail-tiket-actions"><button class="btn btn-primary" onclick="openDewasaPayModal('${esc(nama)}','${esc(person.keluarga||'')}')"><i class="fas fa-money-bill-wave"></i> Bayar Iuran</button></div>`
+        : '';
+
     const cardHTML = `
-        <div class="detail-header">
-            <div class="detail-avatar">${initials}</div>
+        <div class="detail-header" style="background:${themeBg};border-bottom-color:${themeBorder}">
+            <div class="detail-avatar" style="background:${avatarBg}">${initials}</div>
             <div class="detail-info">
-                <p class="detail-nama">${escapeHtml(nama)}</p>
-                <p class="detail-keluarga"><i class="fas fa-users"></i> ${escapeHtml(person.keluarga || '-')}</p>
+                <p class="detail-nama">${esc(nama)}</p>
+                <p class="detail-keluarga"><i class="fas fa-users"></i> ${esc(person.keluarga || '-')}</p>
                 <div class="detail-meta-row">
                     <span class="detail-meta"><i class="fas fa-hashtag"></i> No. ${person.no || '-'}</span>
-                    <span class="detail-meta"><i class="fas fa-receipt"></i> ${cicilanCount} kali cicilan</span>
+                    <span class="detail-meta"><i class="fas fa-receipt"></i> ${cicilanCount}x bayar</span>
+                    ${isKid ? `<span class="detail-meta kid-badge-meta"><i class="fas fa-child"></i> Tiket Anak</span>` : ''}
                 </div>
             </div>
-            <span class="status-badge ${isLunas ? 'status-lunas' : 'status-belum'}">${person.status || 'Belum Lunas'}</span>
+            <span class="status-badge ${isLunas ? 'status-lunas' : 'status-belum'}">${person.status}</span>
         </div>
         <div class="detail-progress-section">
             <div class="detail-progress-row">
                 <span>Terkumpul</span>
-                <span class="detail-progress-amount">${formatRupiah(person.total || 0)} <span class="detail-progress-target">/ ${formatRupiah(IURAN_PER_ORANG)}</span></span>
+                <span class="detail-progress-amount">${formatRupiah(person.total || 0)} <span class="detail-progress-target">/ ${formatRupiah(target)}</span></span>
             </div>
-            <div class="detail-progress-track">
-                <div class="detail-progress-fill ${isLunas ? 'lunas' : ''}" style="width:${progress}%"></div>
+            <div class="detail-progress-track" style="background:${isKid?'#ffedd5':'#e9d5ff'}">
+                <div class="detail-progress-fill ${isLunas ? 'lunas' : ''}" style="width:${progress}%;background:${isLunas?'linear-gradient(90deg,#10b981,#059669)':`linear-gradient(90deg,${themeColor},${isKid?'#f59e0b':'#ec4899'})`}"></div>
             </div>
             <div class="detail-progress-row">
                 <span class="detail-pct">${Math.round(progress)}%</span>
@@ -407,76 +388,206 @@ function openDetailCard(event, nama) {
             ${timelineHTML}
         </div>
         <div class="detail-footer">${footerHTML}</div>
+        ${payBtn}
     `;
 
-    // ── INLINE EXPANSION: kartu muncul di bawah nama yang diklik ──
     const item = event.currentTarget;
+    const key = type + ':' + nama;
 
-    // Kalau klik nama yang sama → tutup (toggle)
-    if (currentOpenName === nama) {
+    if (currentOpenName === nama && currentOpenType === type) {
         closeDetailCard();
         return;
     }
-
-    // Tutup kartu lama dulu kalau ada
     closeDetailCard();
-
-    // Tandai nama yang sedang aktif
+    closeTiketDetailCard();
     currentOpenName = nama;
-    item.classList.add('name-item-active');
+    currentOpenType = type;
+    item.classList.add(isKid ? 'kid-item-active' : 'name-item-active');
 
-    // Buat wrapper inline yang span full-width di grid
-    const inlineWrapper = document.createElement('div');
-    inlineWrapper.className = 'detail-inline-wrapper';
-    inlineWrapper.id = 'inlineDetailCard';
-    inlineWrapper.style.gridColumn = '1 / -1';
+    const wrapper = document.createElement('div');
+    wrapper.className = 'detail-inline-wrapper';
+    wrapper.id = 'inlineDetailCard';
+    wrapper.style.gridColumn = '1 / -1';
+    wrapper.innerHTML = `<div class="detail-card detail-card-inline" style="border-color:${themeBorder}"><button class="detail-close-btn" onclick="closeDetailCard()"><i class="fas fa-times"></i></button>${cardHTML}</div>`;
 
-    // Isi: kartu + tombol tutup
-    inlineWrapper.innerHTML = `
-        <div class="detail-card detail-card-inline">
-            <button class="detail-close-btn" onclick="closeDetailCard()" aria-label="Tutup">
-                <i class="fas fa-times"></i>
-            </button>
-            ${cardHTML}
-        </div>
-    `;
-
-    // Sisipkan SETELAH item nama yang diklik
-    item.parentNode.insertBefore(inlineWrapper, item.nextSibling);
-
-    // Animate in: dari 0 height → tinggi penuh
+    item.parentNode.insertBefore(wrapper, item.nextSibling);
     requestAnimationFrame(() => {
-        inlineWrapper.classList.add('open');
-        // Scroll agar kartu terlihat
-        setTimeout(() => {
-            inlineWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 150);
+        wrapper.classList.add('open');
+        setTimeout(() => wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
     });
 }
 
 function closeDetailCard() {
-    const inlineWrapper = document.getElementById('inlineDetailCard');
-    if (inlineWrapper) {
-        inlineWrapper.classList.remove('open');
-        // Tunggu animasi selesai lalu hapus
-        setTimeout(() => inlineWrapper.remove(), 250);
-    }
-    // Hapus highlight dari nama yang aktif
-    document.querySelectorAll('.name-item-active').forEach(el => el.classList.remove('name-item-active'));
+    const w = document.getElementById('inlineDetailCard');
+    if (w) { w.classList.remove('open'); setTimeout(() => w.remove(), 250); }
+    document.querySelectorAll('.name-item-active,.kid-item-active').forEach(e => e.classList.remove('name-item-active','kid-item-active'));
     currentOpenName = null;
+    currentOpenType = null;
 }
 
-function formatTanggalIndo(tanggal) {
-    if (!tanggal) return '-';
-    const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
-    const parts = tanggal.split('-');
-    if (parts.length === 3) {
-        return `${parseInt(parts[2])} ${BULAN[parseInt(parts[1]) - 1]} ${parts[0]}`;
-    }
-    return tanggal;
+function closeTiketDetailCard() { closeDetailCard(); }
+
+// ==========================================
+// MODAL: BAYAR DEWASA
+// ==========================================
+let currentEditingPerson = null;
+
+function openDewasaPayModal(nama, keluarga) {
+    currentEditingPerson = nama;
+    el.modalNama.value = nama;
+    el.modalKeluarga.value = keluarga || '-';
+    el.modalTanggal.value = new Date().toISOString().split('T')[0];
+    el.modalJumlah.value = '';
+    el.modalKeterangan.value = '';
+    el.modalOverlay.classList.add('active');
 }
 
-// Tutup detail card dengan klik di luar / Escape
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeDetailCard();
-});
+function closeModal() { el.modalOverlay.classList.remove('active'); currentEditingPerson = null; }
+
+async function saveDewasaPayment() {
+    const jumlah = parseInt(el.modalJumlah.value) || 0;
+    const tanggal = el.modalTanggal.value;
+    if (jumlah <= 0) { showToast('Jumlah harus > 0!', 'error'); return; }
+    showLoading(true);
+    try {
+        if (GAS_API_URL.includes('xxxxxxxx')) {
+            await new Promise(r => setTimeout(r, 600));
+            const p = dewasaData.find(x => x.nama === currentEditingPerson);
+            if (p) { p.total = (p.total||0)+jumlah; p.pembayaran.push({tanggal,jumlah,keterangan:'Cicilan'}); p.status = p.total>=IURAN_PER_ORANG?'Lunas':'Belum Lunas'; }
+        } else {
+            const params = new URLSearchParams({ action:'updatePayment', nama:currentEditingPerson, tanggal, jumlah:String(jumlah), keterangan:el.modalKeterangan.value });
+            const r = await fetch(`${GAS_API_URL}?${params}`);
+            const res = await r.json();
+            if (!res.success) throw new Error(res.message);
+        }
+        closeModal(); closeDetailCard(); await loadData(); showToast('Pembayaran berhasil!', 'success');
+    } catch (e) { showToast('Gagal: ' + e.message, 'error'); }
+    finally { showLoading(false); }
+}
+
+// ==========================================
+// MODAL: TAMBAH TIKET ANAK
+// ==========================================
+function openAddTiketModal() {
+    el.tiketNamaAnak.value = '';
+    el.tiketKeluarga.value = '';
+    const sel = el.tiketOrangTua;
+    sel.innerHTML = '<option value="">-- Pilih orang tua --</option>';
+    dewasaData.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.nama; opt.textContent = `${p.nama} (${p.keluarga})`;
+        sel.appendChild(opt);
+    });
+    sel.onchange = function() {
+        const found = dewasaData.find(p => p.nama === this.value);
+        if (found) el.tiketKeluarga.value = found.keluarga || '';
+    };
+    el.modalTiketOverlay.classList.add('active');
+}
+
+function closeTiketModal() { el.modalTiketOverlay.classList.remove('active'); }
+
+async function saveTiketAnak() {
+    const namaAnak = el.tiketNamaAnak.value.trim();
+    const keluarga = el.tiketKeluarga.value.trim();
+    const orangTua = el.tiketOrangTua.value;
+    if (!namaAnak) { showToast('Nama anak harus diisi!', 'error'); return; }
+    showLoading(true);
+    try {
+        if (GAS_API_URL.includes('xxxxxxxx')) {
+            await new Promise(r => setTimeout(r, 600));
+            anakData.push({ no: anakData.length + 51, keluarga, nama: namaAnak, orangTua, pembayaran: [], total: 0, status: 'Belum Lunas' });
+        } else {
+            const params = new URLSearchParams({ action:'addTiketAnak', namaAnak, keluarga, orangTua });
+            const r = await fetch(`${GAS_API_URL}?${params}`);
+            const res = await r.json();
+            if (!res.success) throw new Error(res.message);
+        }
+        closeTiketModal(); await loadData(); showToast('Tiket anak ditambahkan!', 'success');
+    } catch (e) { showToast('Gagal: ' + e.message, 'error'); }
+    finally { showLoading(false); }
+}
+
+// ==========================================
+// MODAL: BAYAR TIKET ANAK
+// ==========================================
+let currentEditingAnak = null;
+
+function openTiketPayModal(nama, keluarga) {
+    currentEditingAnak = nama;
+    el.tiketPayNama.value = nama;
+    el.tiketPayKeluarga.value = keluarga || '-';
+    el.tiketPayTanggal.value = new Date().toISOString().split('T')[0];
+    el.tiketPayJumlah.value = '';
+    el.tiketPayKeterangan.value = '';
+    el.modalTiketPayOverlay.classList.add('active');
+}
+
+function closeTiketPayModal() { el.modalTiketPayOverlay.classList.remove('active'); currentEditingAnak = null; }
+
+async function saveTiketPayment() {
+    const jumlah = parseInt(el.tiketPayJumlah.value) || 0;
+    const tanggal = el.tiketPayTanggal.value;
+    if (jumlah <= 0) { showToast('Jumlah harus > 0!', 'error'); return; }
+    showLoading(true);
+    try {
+        if (GAS_API_URL.includes('xxxxxxxx')) {
+            await new Promise(r => setTimeout(r, 600));
+            const t = anakData.find(x => x.nama === currentEditingAnak);
+            if (t) { t.total = (t.total||0)+jumlah; t.pembayaran.push({tanggal,jumlah,keterangan:'Bayar tiket'}); t.status = t.total>=HARGA_TIKET?'Lunas':'Belum Lunas'; }
+        } else {
+            const params = new URLSearchParams({ action:'updateTiketPayment', namaAnak:currentEditingAnak, tanggal, jumlah:String(jumlah), keterangan:el.tiketPayKeterangan.value });
+            const r = await fetch(`${GAS_API_URL}?${params}`);
+            const res = await r.json();
+            if (!res.success) throw new Error(res.message);
+        }
+        closeTiketPayModal(); closeDetailCard(); await loadData(); showToast('Pembayaran tiket berhasil!', 'success');
+    } catch (e) { showToast('Gagal: ' + e.message, 'error'); }
+    finally { showLoading(false); }
+}
+
+// ==========================================
+// UTILITIES
+// ==========================================
+function esc(t) { return t ? t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;') : ''; }
+function showLoading(s) { el.loadingOverlay.classList.toggle('hidden', !s); }
+function showToast(msg, type='success') { el.toastMessage.textContent=msg; el.toast.className='toast'; if(type==='error') el.toast.classList.add('error'); el.toast.classList.add('show'); setTimeout(()=>el.toast.classList.remove('show'),3000); }
+function formatRupiah(n) { return 'Rp ' + (n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function debounce(fn, w) { let t; return function(...a) { clearTimeout(t); t = setTimeout(() => fn(...a), w); }; }
+function animateValue(el, start, end, dur) {
+    if (start === end) { el.textContent = end; return; }
+    const inc = (end - start) / (dur / 16);
+    let cur = start;
+    const timer = setInterval(() => {
+        cur += inc;
+        if ((inc > 0 && cur >= end) || (inc < 0 && cur <= end)) { el.textContent = end; clearInterval(timer); }
+        else el.textContent = Math.floor(cur);
+    }, 16);
+}
+function fmtTgl(t) {
+    if (!t) return '-';
+    const B = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+    const p = t.split('-');
+    return p.length===3 ? `${parseInt(p[2])} ${B[parseInt(p[1])-1]} ${p[0]}` : t;
+}
+
+// ==========================================
+// SAMPLE DATA
+// ==========================================
+function getSampleDewasa() {
+    return [
+        {no:1,keluarga:'De Is',nama:'De Istiqomah',status:'Lunas',total:260000,pembayaran:[{tanggal:'2026-06-27',jumlah:260000,keterangan:'Lunas'}]},
+        {no:2,keluarga:'De Is',nama:'Ica',status:'Belum Lunas',total:100000,pembayaran:[{tanggal:'2026-06-28',jumlah:100000,keterangan:'Cicilan'}]},
+        {no:3,keluarga:'Dedi',nama:'Dedi',status:'Lunas',total:260000,pembayaran:[{tanggal:'2026-06-28',jumlah:260000,keterangan:'Transfer'}]},
+        {no:4,keluarga:'Dedi',nama:'Faza',status:'Belum Lunas',total:150000,pembayaran:[{tanggal:'2026-06-30',jumlah:150000,keterangan:'Cicilan'}]},
+        {no:5,keluarga:'Syarif',nama:'Syarief',status:'Lunas',total:260000,pembayaran:[{tanggal:'2026-06-27',jumlah:260000,keterangan:'Cash'}]},
+        {no:6,keluarga:'Bella',nama:'Maimon',status:'Lunas',total:260000,pembayaran:[{tanggal:'2026-06-29',jumlah:260000,keterangan:'Transfer'}]},
+    ];
+}
+function getSampleAnak() {
+    return [
+        {no:51,keluarga:'Bella',nama:'Vino',status:'Belum Lunas',total:0,pembayaran:[]},
+        {no:52,keluarga:'Dedi',nama:'Azriel',status:'Belum Lunas',total:0,pembayaran:[]},
+        {no:53,keluarga:'Syarif',nama:'Ratika',status:'Belum Lunas',total:0,pembayaran:[]},
+    ];
+}
