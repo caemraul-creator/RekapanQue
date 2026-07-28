@@ -56,6 +56,7 @@ const el = {
 
     // Header stats (dynamic)
     statPeserta: $('statPeserta'),
+    statAnak: $('statAnak'),
     statLunas: $('statLunas'),
     statBelum: $('statBelum'),
     statTotal: $('statTotal'),
@@ -186,14 +187,18 @@ function updateHeaderStats(tab) {
     } else {
         data = anakData; target = HARGA_TIKET; label = 'Anak';
     }
+    const totalDewasa = dewasaData.length;
+    const totalAnak = anakData.length;
     const total = data.length;
     const lunas = data.filter(p => p.status === 'Lunas').length;
     const belum = total - lunas;
+    // Terkumpul = gabungan dewasa + anak (selalu total keseluruhan)
     const revenue = dewasaData.reduce((s, p) => s + (p.total || 0), 0)
-               + anakData.reduce((s, p) => s + (p.total || 0), 0);
+                   + anakData.reduce((s, p) => s + (p.total || 0), 0);
 
     el.statPesertaLabel.textContent = label;
-    animateValue(el.statPeserta, parseInt(el.statPeserta.textContent) || 0, total, 600);
+    animateValue(el.statPeserta, parseInt(el.statPeserta.textContent) || 0, totalDewasa, 600);
+    animateValue(el.statAnak, parseInt(el.statAnak.textContent) || 0, totalAnak, 600);
     animateValue(el.statLunas, parseInt(el.statLunas.textContent) || 0, lunas, 600);
     animateValue(el.statBelum, parseInt(el.statBelum.textContent) || 0, belum, 600);
     el.statTotal.textContent = formatRupiah(revenue);
@@ -208,8 +213,19 @@ async function loadData() {
         const response = await fetch(`${GAS_API_URL}?action=getData`);
         const result = await response.json();
         if (result.success) {
-            dewasaData = result.dewasa || [];
-            anakData = result.anak || [];
+            // Kompatibel v4 (result.data) dan v5 (result.dewasa + result.anak)
+            if (result.dewasa || result.anak) {
+                // Format v5
+                dewasaData = result.dewasa || [];
+                anakData = result.anak || [];
+            } else if (result.data) {
+                // Format v4 lama — pisahkan dewasa (no<=50) dan anak (no>50)
+                dewasaData = result.data.filter(p => (p.no || 0) <= 50);
+                anakData = result.data.filter(p => (p.no || 0) > 50);
+            } else {
+                dewasaData = [];
+                anakData = [];
+            }
             if (result.targetIuran) IURAN_PER_ORANG = result.targetIuran;
             if (result.hargaTiket) HARGA_TIKET = result.hargaTiket;
         } else {

@@ -75,6 +75,7 @@ body {
 .stat-value { display: block; font-size: 0.9rem; font-weight: 900; color: var(--dark); line-height: 1.2; }
 .stat-label { display: block; font-size: 0.48rem; color: var(--gray); font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; transition: all 0.3s; }
 .s-peserta { background: #ede9fe; }
+.s-anak    { background: #ffedd5; }
 .s-lunas  { background: #d1fae5; }
 .s-belum  { background: #fee2e2; }
 .s-total  { background: linear-gradient(135deg, #ede9fe, #fce7f3); }
