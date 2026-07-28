@@ -189,7 +189,8 @@ function updateHeaderStats(tab) {
     const total = data.length;
     const lunas = data.filter(p => p.status === 'Lunas').length;
     const belum = total - lunas;
-    const revenue = data.reduce((s, p) => s + (p.total || 0), 0);
+    const revenue = dewasaData.reduce((s, p) => s + (p.total || 0), 0)
+               + anakData.reduce((s, p) => s + (p.total || 0), 0);
 
     el.statPesertaLabel.textContent = label;
     animateValue(el.statPeserta, parseInt(el.statPeserta.textContent) || 0, total, 600);
